@@ -54,5 +54,108 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<bool> {
-
+    loop {
+        terminal.draw(|f| ui(f, app))?;
+        if let Event::Key(key) = event::read()? {
+            if key.kind == event::KeyEventKind::Release {
+                continue; //skips loggint the release of keys
+            }
+            match app.current_screen {
+                CurrentScreen::Main => match key.code {
+                    KeyCode::Char('n') => {
+                        app.current_screen = CurrentScreen::Editor;
+                        app.current_edit = Some(CurrentlyEditing::Size)
+                    }
+                    KeyCode::Char('q') => {
+                        app.current_screen = CurrentScreen::Confirmation;
+                    }
+                    _ => {}
+                },
+                CurrentScreen::Confirmation => match key.code {
+                    KeyCode::Char('y') => {
+                        return Ok(true);
+                    }
+                    KeyCode::Char('n') => {
+                        return Ok(false);
+                    }
+                    _ => {}
+                },
+                CurrentScreen::Editor => match key.code {
+                    KeyCode::Esc => {
+                        app.current_screen = CurrentScreen::Main;
+                        app.current_edit = None;
+                    }
+                    KeyCode::Tab => app.change_editing(),
+                    KeyCode::Enter => {
+                        if let Some(editing) = &app.current_edit {
+                            match editing {
+                                CurrentlyEditing::Material => {
+                                    app.current_screen = CurrentScreen::MaterialPicker;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    KeyCode::Char(value) => {
+                        if let Some(editing) = &app.current_edit {
+                            match editing {
+                                CurrentlyEditing::Size => {
+                                    app.size_input.push(value);
+                                }
+                                CurrentlyEditing::PositionX => {
+                                    app.position_input_x.push(value);
+                                }
+                                CurrentlyEditing::PositionY => {
+                                    app.position_input_z.push(value);
+                                }
+                                CurrentlyEditing::PositionZ => {
+                                    app.position_input_z.push(value);
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => {}
+                },
+                CurrentScreen::MaterialPicker => match key.code {
+                    KeyCode::Tab => {
+                        todo!() //cycle the material
+                    }
+                    KeyCode::Enter => {
+                        //save the material choice
+                        app.current_screen = CurrentScreen::Editor
+                    }
+                    KeyCode::Char('n') => {
+                        app.current_screen = CurrentScreen::MaterialEditor;
+                        app.current_edit = Some(CurrentlyEditing::MatColor);
+                    }
+                    _ => {}
+                },
+                CurrentScreen::MaterialEditor => match key.code {
+                    KeyCode::Tab => app.change_editing(),
+                    KeyCode::Esc => app.current_screen = CurrentScreen::MaterialPicker,
+                    KeyCode::Enter => {
+                        if let Some(editing) = &app.current_edit {
+                            match editing {
+                                CurrentlyEditing::MatColor => {
+                                    app.current_edit = Some(CurrentlyEditing::ColorR);
+                                    app.current_screen = CurrentScreen::ColorEditor
+                                }
+                                CurrentlyEditing::MatType => {
+                                    app.cycle_mat_type()
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => {}
+                },
+                CurrentScreen::ColorEditor => match key.code {
+                    KeyCode::Tab => app.change_editing(),
+                    _ => {}
+                }
+            }
+        }
+    }
 }
+
