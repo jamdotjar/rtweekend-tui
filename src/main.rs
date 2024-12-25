@@ -1,4 +1,6 @@
 mod app;
+mod ui;
+use ui::*;
 use app::*;
 use crossterm::event::{self, DisableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
@@ -154,6 +156,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     KeyCode::Tab => app.change_editing(),
                     _ => {}
                 }
+                _ => {}
             }
         }
     }
