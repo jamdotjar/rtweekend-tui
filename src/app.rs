@@ -1,5 +1,10 @@
-use std::{collections::HashMap, rc::Rc};
+#![allow(unused_imports)]
+use std::{
+    collections::{binary_heap, HashMap},
+    rc::Rc,
+};
 
+use color_eyre::owo_colors::OwoColorize;
 use rtwlib::{
     color::Color,
     hittable::HittableList,
@@ -22,7 +27,7 @@ pub enum CurrentlyEditing {
     Size,
     PositionX,
     PositionY,
-    PositionZ, 
+    PositionZ,
     Material,
     MatType,
     MatColor,
@@ -31,6 +36,7 @@ pub enum CurrentlyEditing {
     ColorG,
     ColorB,
 }
+#[derive(Clone)]
 pub enum MaterialType {
     Lambertian,
     Metal,
@@ -38,19 +44,31 @@ pub enum MaterialType {
     Normal,
 }
 
+impl std::fmt::Display for MaterialType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MaterialType::Lambertian => write!(f, "Diffuse"),
+            MaterialType::Metal => write!(f, "Metal"),
+            MaterialType::Normal => write!(f, "Debug"),
+            MaterialType::Dielectric => write!(f, "Glass"),
+        }
+    }
+}
+
 pub struct App {
     pub current_screen: CurrentScreen,
     pub current_edit: Option<CurrentlyEditing>,
     pub world: HittableList,
-    pub materials: Vec<Rc<dyn Material>>,
+    pub materials: Vec<(String, Rc<dyn Material>)>,
     pub material_input: usize,
     pub size_input: String,
     pub position_input_x: String,
     pub position_input_y: String,
     pub position_input_z: String,
     pub mat_type_input: Option<MaterialType>,
-    pub mat_color_input: Color,
+    pub mat_color_input: String,
     pub mat_other_input: String,
+    pub mat_name_input: String,
 }
 
 impl App {
@@ -61,15 +79,19 @@ impl App {
             world: HittableList {
                 objects: Vec::new(),
             },
-            materials: vec![Rc::new(Lambertian::new(Color::from(0.8)))],
+            materials: vec![(
+                "Diffuse 1".to_string(),
+                Rc::new(Lambertian::new(Color::from(0.8))),
+            )],
             material_input: 0,
             size_input: String::from("1.0"),
             position_input_x: String::from("0.0"),
             position_input_y: String::from("0.0"),
             position_input_z: String::from("0.0"),
             mat_type_input: None,
-            mat_color_input: Color::from(0.8),
+            mat_color_input: String::from("fa4e4e"),
             mat_other_input: String::from("0.0"),
+            mat_name_input: String::from("Material"),
         }
     }
     pub fn save_material(&mut self) -> Result<(), String> {
@@ -77,17 +99,18 @@ impl App {
             .mat_other_input
             .parse()
             .map_err(|_| "Invalid other value")?;
+        let color: Color = self.get_color();
         let mat: Rc<dyn Material> = match &self.mat_type_input {
             Some(x) => match x {
-                MaterialType::Lambertian => Rc::new(Lambertian::new(self.mat_color_input)),
-                MaterialType::Metal => Rc::new(Metal::new(self.mat_color_input, other)),
+                MaterialType::Lambertian => Rc::new(Lambertian::new(color)),
+                MaterialType::Metal => Rc::new(Metal::new(color, other)),
                 MaterialType::Normal => Rc::new(Normal::new()),
                 MaterialType::Dielectric => Rc::new(Dielectric::new(other)),
             },
             None => return Err(String::from("No material type provided")),
         };
-        self.materials.push(mat);
-        self.mat_color_input = Color::from(0.8);
+        self.materials.push((self.mat_name_input.clone(), mat));
+        self.mat_color_input = String::from("fa4e4e");
         self.mat_type_input = None;
         self.mat_other_input = String::from("1.0");
         Ok(())
@@ -97,7 +120,8 @@ impl App {
             .materials
             .get(self.material_input)
             .ok_or("Invalid material input")?
-            .clone();
+            .clone()
+            .1;
 
         let size: f64 = self.size_input.parse().map_err(|_| "Invalid size input")?;
 
@@ -145,7 +169,7 @@ impl App {
 
                 CurrentlyEditing::ColorR => Some(CurrentlyEditing::ColorG),
                 CurrentlyEditing::ColorG => Some(CurrentlyEditing::ColorB),
-                CurrentlyEditing::ColorB => Some(CurrentlyEditing::ColorR)
+                CurrentlyEditing::ColorB => Some(CurrentlyEditing::ColorR),
             }
         } else {
             self.current_edit = match self.current_screen {
@@ -169,10 +193,14 @@ impl App {
                 MaterialType::Metal => Some(MaterialType::Dielectric),
                 MaterialType::Dielectric => Some(MaterialType::Normal),
                 MaterialType::Normal => Some(MaterialType::Lambertian),
-            } 
+            }
         }
     }
+    pub fn get_color(&self) -> Color {
+        let r = u8::from_str_radix(&self.mat_color_input[0..2], 16).unwrap_or(255);
+        let g = u8::from_str_radix(&self.mat_color_input[2..4], 16).unwrap_or(0);
+        let b = u8::from_str_radix(&self.mat_color_input[4..6], 16).unwrap_or(255);
 
-
+        Color::new(r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0)
+    }
 }
-

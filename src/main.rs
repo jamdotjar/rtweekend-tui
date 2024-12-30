@@ -1,6 +1,6 @@
+#![allow(unused_imports)]
 mod app;
 mod ui;
-use ui::*;
 use app::*;
 use crossterm::event::{self, DisableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
@@ -22,6 +22,7 @@ use ratatui::{
 use rtwlib::camera::*;
 use std::error::Error;
 use std::io;
+use ui::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
@@ -77,8 +78,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     KeyCode::Char('y') => {
                         return Ok(true);
                     }
+                    KeyCode::Char('q') => {
+                        return Ok(true);
+                    }
                     KeyCode::Char('n') => {
-                        return Ok(false);
+                        app.current_screen = CurrentScreen::Main;
                     }
                     _ => {}
                 },
@@ -91,9 +95,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     KeyCode::Enter => {
                         if let Some(editing) = &app.current_edit {
                             match editing {
-                                CurrentlyEditing::Material => {
-                                    app.current_screen = CurrentScreen::MaterialPicker;
-                                }
+                                CurrentlyEditing::Material => match app.save_object() {
+                                    Ok(_) => app.current_screen = CurrentScreen::Main,
+                                    Err(_) => {}
+                                },
                                 _ => {}
                             }
                         }
@@ -108,20 +113,54 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.position_input_x.push(value);
                                 }
                                 CurrentlyEditing::PositionY => {
-                                    app.position_input_z.push(value);
+                                    app.position_input_y.push(value);
                                 }
                                 CurrentlyEditing::PositionZ => {
                                     app.position_input_z.push(value);
+                                }
+                                CurrentlyEditing::Material => {
+                                    app.current_screen = CurrentScreen::MaterialPicker;
                                 }
                                 _ => {}
                             }
                         }
                     }
+                    KeyCode::Backspace => {
+                        if let Some(editing) = &app.current_edit {
+                            match editing {
+                                CurrentlyEditing::Size => {
+                                    app.size_input.pop();
+                                }
+                                CurrentlyEditing::PositionX => {
+                                    app.position_input_x.pop();
+                                }
+                                CurrentlyEditing::PositionY => {
+                                    app.position_input_y.pop();
+                                }
+                                CurrentlyEditing::PositionZ => {
+                                    app.position_input_z.pop();
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+
                     _ => {}
                 },
                 CurrentScreen::MaterialPicker => match key.code {
-                    KeyCode::Tab => {
-                        todo!() //cycle the material
+                    KeyCode::Up => {
+                        if app.material_input < app.materials.len() - 1 {
+                            app.material_input += 1;
+                        } else {
+                            app.material_input = 0;
+                        }
+                    }
+                    KeyCode::Down => {
+                        if app.material_input > 0 {
+                            app.material_input -= 1;
+                        } else {
+                            app.material_input = app.materials.len() - 1
+                        }
                     }
                     KeyCode::Enter => {
                         //save the material choice
@@ -130,6 +169,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     KeyCode::Char('n') => {
                         app.current_screen = CurrentScreen::MaterialEditor;
                         app.current_edit = Some(CurrentlyEditing::MatColor);
+                        app.mat_type_input = Some(MaterialType::Lambertian);
                     }
                     _ => {}
                 },
@@ -143,9 +183,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                     app.current_edit = Some(CurrentlyEditing::ColorR);
                                     app.current_screen = CurrentScreen::ColorEditor
                                 }
-                                CurrentlyEditing::MatType => {
-                                    app.cycle_mat_type()
-                                }
+                                CurrentlyEditing::MatType => app.cycle_mat_type(),
                                 _ => {}
                             }
                         }
@@ -155,10 +193,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                 CurrentScreen::ColorEditor => match key.code {
                     KeyCode::Tab => app.change_editing(),
                     _ => {}
-                }
+                },
                 _ => {}
             }
         }
     }
 }
-
