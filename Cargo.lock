@@ -542,7 +542,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rtweekend-tui"
+name = "rtw-tui"
 version = "0.1.0"
 dependencies = [
  "color-eyre",
