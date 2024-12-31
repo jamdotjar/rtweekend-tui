@@ -20,7 +20,7 @@ There are two ways to install rtw.tui, crates.io or building from source.
 
 ### Crates.io
 ```bash
-cargo install rtw.tui
+cargo install rtw-tui
 ```
 ### Building from Source
 ```bash
