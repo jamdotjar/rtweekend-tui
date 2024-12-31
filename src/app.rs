@@ -97,6 +97,7 @@ pub struct App {
     pub focus_dist: String,
     pub aperture: String,
     pub render_progress: f64,
+    pub selected_object: Option<usize>,
 }
 
 impl App {
@@ -135,6 +136,7 @@ impl App {
             focus_dist: String::from("1.0"),
             aperture: String::from("0.0"),
             render_progress: 0.0,
+            selected_object: None,
         }
     }
     pub fn save_material(&mut self) -> Result<(), String> {
@@ -197,48 +199,6 @@ impl App {
         Ok(())
     }
 
-    pub fn change_editing(&mut self) {
-        if let Some(edit_mode) = &self.current_edit {
-            self.current_edit = match edit_mode {
-                CurrentlyEditing::Size => Some(CurrentlyEditing::PositionX),
-                CurrentlyEditing::PositionX => Some(CurrentlyEditing::PositionY),
-                CurrentlyEditing::PositionY => Some(CurrentlyEditing::PositionZ),
-                CurrentlyEditing::PositionZ => Some(CurrentlyEditing::Material),
-                CurrentlyEditing::Material => Some(CurrentlyEditing::Size),
-
-                CurrentlyEditing::MatType => Some(CurrentlyEditing::MatColor),
-                CurrentlyEditing::MatColor => match self.mat_type_input {
-                    Some(MaterialType::Dielectric) | Some(MaterialType::Metal) => {
-                        Some(CurrentlyEditing::MatProperty)
-                    }
-                    _ => Some(CurrentlyEditing::MatName),
-                },
-                CurrentlyEditing::MatProperty => Some(CurrentlyEditing::MatName),
-                CurrentlyEditing::MatName => Some(CurrentlyEditing::MatType),
-
-                CurrentlyEditing::Width => Some(CurrentlyEditing::Height),
-                CurrentlyEditing::Height => Some(CurrentlyEditing::ImgName),
-                CurrentlyEditing::ImgName => Some(CurrentlyEditing::Samples),
-                CurrentlyEditing::Samples => Some(CurrentlyEditing::Bounces),
-                CurrentlyEditing::Bounces => Some(CurrentlyEditing::CamX),
-                CurrentlyEditing::CamX => Some(CurrentlyEditing::CamY),
-                CurrentlyEditing::CamY => Some(CurrentlyEditing::CamZ),
-                CurrentlyEditing::CamZ => Some(CurrentlyEditing::LookX),
-                CurrentlyEditing::LookX => Some(CurrentlyEditing::LookY),
-                CurrentlyEditing::LookY => Some(CurrentlyEditing::LookZ),
-                CurrentlyEditing::LookZ => Some(CurrentlyEditing::Fov),
-                CurrentlyEditing::Fov => Some(CurrentlyEditing::FocusDist),
-                CurrentlyEditing::FocusDist => Some(CurrentlyEditing::Aperture),
-                CurrentlyEditing::Aperture => Some(CurrentlyEditing::Width),
-            }
-        } else {
-            self.current_edit = match self.current_screen {
-                CurrentScreen::MaterialEditor => Some(CurrentlyEditing::MatColor),
-                _ => Some(CurrentlyEditing::Size),
-            }
-        }
-    }
-
     pub fn display(&self) -> Result<(), ()> {
         let world = &self.world.as_simple_vec();
         for object in world {
@@ -265,5 +225,80 @@ impl App {
         let b = u8::from_str_radix(&self.mat_color_input[4..6], 16).unwrap_or_else(|_| 255);
 
         Color::new(r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0)
+    }
+
+    pub fn change_editing(&mut self, forwards: bool) {
+        if let Some(edit_mode) = &self.current_edit {
+            self.current_edit = match (edit_mode, forwards) {
+                (CurrentlyEditing::Size, true) => Some(CurrentlyEditing::PositionX),
+                (CurrentlyEditing::PositionX, true) => Some(CurrentlyEditing::PositionY),
+                (CurrentlyEditing::PositionY, true) => Some(CurrentlyEditing::PositionZ),
+                (CurrentlyEditing::PositionZ, true) => Some(CurrentlyEditing::Material),
+                (CurrentlyEditing::Material, true) => Some(CurrentlyEditing::Size),
+
+                (CurrentlyEditing::MatType, true) => Some(CurrentlyEditing::MatColor),
+                (CurrentlyEditing::MatColor, true) => match self.mat_type_input {
+                    Some(MaterialType::Dielectric) | Some(MaterialType::Metal) => {
+                        Some(CurrentlyEditing::MatProperty)
+                    }
+                    _ => Some(CurrentlyEditing::MatName),
+                },
+                (CurrentlyEditing::MatProperty, true) => Some(CurrentlyEditing::MatName),
+                (CurrentlyEditing::MatName, true) => Some(CurrentlyEditing::MatType),
+
+                (CurrentlyEditing::Width, true) => Some(CurrentlyEditing::Height),
+                (CurrentlyEditing::Height, true) => Some(CurrentlyEditing::ImgName),
+                (CurrentlyEditing::ImgName, true) => Some(CurrentlyEditing::Samples),
+                (CurrentlyEditing::Samples, true) => Some(CurrentlyEditing::Bounces),
+                (CurrentlyEditing::Bounces, true) => Some(CurrentlyEditing::CamX),
+                (CurrentlyEditing::CamX, true) => Some(CurrentlyEditing::CamY),
+                (CurrentlyEditing::CamY, true) => Some(CurrentlyEditing::CamZ),
+                (CurrentlyEditing::CamZ, true) => Some(CurrentlyEditing::LookX),
+                (CurrentlyEditing::LookX, true) => Some(CurrentlyEditing::LookY),
+                (CurrentlyEditing::LookY, true) => Some(CurrentlyEditing::LookZ),
+                (CurrentlyEditing::LookZ, true) => Some(CurrentlyEditing::Fov),
+                (CurrentlyEditing::Fov, true) => Some(CurrentlyEditing::FocusDist),
+                (CurrentlyEditing::FocusDist, true) => Some(CurrentlyEditing::Aperture),
+                (CurrentlyEditing::Aperture, true) => Some(CurrentlyEditing::Width),
+
+                (CurrentlyEditing::Size, false) => Some(CurrentlyEditing::Material),
+                (CurrentlyEditing::PositionX, false) => Some(CurrentlyEditing::Size),
+                (CurrentlyEditing::PositionY, false) => Some(CurrentlyEditing::PositionX),
+                (CurrentlyEditing::PositionZ, false) => Some(CurrentlyEditing::PositionY),
+                (CurrentlyEditing::Material, false) => Some(CurrentlyEditing::PositionZ),
+
+                (CurrentlyEditing::MatType, false) => Some(CurrentlyEditing::MatName),
+                (CurrentlyEditing::MatColor, false) => Some(CurrentlyEditing::MatType),
+                (CurrentlyEditing::MatProperty, false) => Some(CurrentlyEditing::MatColor),
+                (CurrentlyEditing::MatName, false) => match self.mat_type_input {
+                    Some(MaterialType::Dielectric) | Some(MaterialType::Metal) => {
+                        Some(CurrentlyEditing::MatProperty)
+                    }
+                    _ => Some(CurrentlyEditing::MatColor),
+                },
+
+                (CurrentlyEditing::Width, false) => Some(CurrentlyEditing::Aperture),
+                (CurrentlyEditing::Height, false) => Some(CurrentlyEditing::Width),
+                (CurrentlyEditing::ImgName, false) => Some(CurrentlyEditing::Height),
+                (CurrentlyEditing::Samples, false) => Some(CurrentlyEditing::ImgName),
+                (CurrentlyEditing::Bounces, false) => Some(CurrentlyEditing::Samples),
+                (CurrentlyEditing::CamX, false) => Some(CurrentlyEditing::Bounces),
+                (CurrentlyEditing::CamY, false) => Some(CurrentlyEditing::CamX),
+                (CurrentlyEditing::CamZ, false) => Some(CurrentlyEditing::CamY),
+                (CurrentlyEditing::LookX, false) => Some(CurrentlyEditing::CamZ),
+                (CurrentlyEditing::LookY, false) => Some(CurrentlyEditing::LookX),
+                (CurrentlyEditing::LookZ, false) => Some(CurrentlyEditing::LookY),
+                (CurrentlyEditing::Fov, false) => Some(CurrentlyEditing::LookZ),
+                (CurrentlyEditing::FocusDist, false) => Some(CurrentlyEditing::Fov),
+                (CurrentlyEditing::Aperture, false) => Some(CurrentlyEditing::FocusDist),
+
+                _ => None,
+            }
+        } else {
+            self.current_edit = match self.current_screen {
+                CurrentScreen::MaterialEditor => Some(CurrentlyEditing::MatColor),
+                _ => Some(CurrentlyEditing::Size),
+            }
+        }
     }
 }

@@ -12,7 +12,8 @@ use ratatui::{
     symbols::line::TOP_RIGHT,
     text::{Line, Span, Text},
     widgets::{
-        Block, BorderType, Borders, Clear, List, ListItem, ListState, Padding, Paragraph, Wrap,
+        Block, BorderType, Borders, Cell, Clear, List, ListItem, ListState, Padding, Paragraph,
+        Row, Scrollbar, ScrollbarState, Table, TableState, Wrap,
     },
     Frame,
 };
@@ -94,6 +95,10 @@ pub fn ui(frame: &mut Frame, app: &App) {
                     .fg(Color::Blue)
                     .add_modifier(Modifier::BOLD),
             ));
+            info_lines.push(Line::styled(
+                "  ↑ & ↓: Scroll object list",
+                Style::default(),
+            ));
             info_lines.push(Line::styled("  [N]: Create a new object", Style::default()));
             info_lines.push(Line::styled(
                 "  [M]: Create a new material",
@@ -105,12 +110,13 @@ pub fn ui(frame: &mut Frame, app: &App) {
         CurrentScreen::Editor => {
             info_lines.push(Line::styled("Editor:", Style::default().fg(Color::Green)));
             info_lines.push(Line::styled(
-                "  TAB: Cycle through inputs",
+                "  Tab & Shift+Tab: Change inputs",
                 Style::default(),
             ));
+            info_lines.push(Line::styled("  ← & →: Change inputs", Style::default()));
             info_lines.push(Line::styled("  Type to input", Style::default()));
             info_lines.push(Line::styled("  ↑ & ↓: Choose Material", Style::default()));
-            info_lines.push(Line::styled("  Enter: Confirm", Style::default()));
+            info_lines.push(Line::styled("  Enter: Save", Style::default()));
             info_lines.push(Line::styled("  Esc: Cancel", Style::default()));
         }
         CurrentScreen::MaterialPicker => {
@@ -127,9 +133,10 @@ pub fn ui(frame: &mut Frame, app: &App) {
                 Style::default().fg(Color::Green),
             ));
             info_lines.push(Line::styled(
-                "  TAB: Cycle through inputs",
+                "  Tab & Shift+Tab: Change inputs",
                 Style::default(),
             ));
+            info_lines.push(Line::styled("  ← & →: Change inputs", Style::default()));
             info_lines.push(Line::styled("  Type to input color", Style::default()));
             info_lines.push(Line::styled(
                 "  ↑ & ↓: cycle through material types",
@@ -143,7 +150,8 @@ pub fn ui(frame: &mut Frame, app: &App) {
                 "Render settings",
                 Style::default().fg(Color::Red),
             ));
-            info_lines.push("  Tab: Cycle through inputs".into());
+            info_lines.push("  Tab & Shift+Tab: Change inputs".into());
+            info_lines.push(Line::styled("  ← & →: Change inputs", Style::default()));
             info_lines.push("  Type to input".into());
             info_lines.push("  Enter: Render scene ( this might take a bit )".into());
             info_lines.push("  Esc: Close".into());
@@ -151,21 +159,52 @@ pub fn ui(frame: &mut Frame, app: &App) {
         _ => {}
     }
 
-    let info = Paragraph::new(Text::from(info_lines)).block(info_block);
+    let info = Paragraph::new(Text::from(info_lines))
+        .block(info_block)
+        .wrap(Wrap { trim: false });
 
-    //main object list
-    let mut objects = Vec::<ListItem>::new();
+    //object table
+    let object_data = app.world.as_info_vec();
 
-    for object in app.world.as_simple_vec() {
-        objects.push(ListItem::new(Line::from(Span::styled(
-            object,
-            Style::default().fg(Color::LightYellow),
-        ))));
-    }
     let object_block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded);
-    let object_list = List::new(objects).block(object_block);
+
+    let rows = object_data
+        .iter()
+        .enumerate()
+        .map(|(i, data)| {
+            let color = match i % 2 {
+                0 => Color::Rgb((30), (30), (40)),
+                _ => Color::Rgb((25), (25), (35)),
+            };
+            let item = data
+                .iter()
+                .map(|content| Cell::from(Text::from(format!("\n{content}\n"))))
+                .collect::<Vec<_>>();
+            Row::new(item)
+                .style(Style::default().fg(Color::White).bg(color))
+                .height(3)
+        })
+        .collect::<Vec<_>>();
+
+    let widths = [
+        Constraint::Length(8),
+        Constraint::Length(6),
+        Constraint::Length(5),
+        Constraint::Length(5),
+        Constraint::Length(5),
+        Constraint::Min(10),
+    ];
+    let mut table_state = TableState::default();
+    table_state.select(app.selected_object);
+    let table = Table::new(rows, widths)
+        .header(
+            Row::new(vec!["Type", "Radius", "X", "Y", "Z", "Material"])
+                .style(Style::default().bg(Color::Rgb((30), (40), (75))))
+                .height(2),
+        )
+        .block(object_block);
 
     //material list
     let mut materials = Vec::<ListItem>::new();
@@ -197,14 +236,14 @@ pub fn ui(frame: &mut Frame, app: &App) {
         Span::styled(" Objects in Scene. ", Style::default().fg(Color::Green)),
         Span::raw(app.materials.len().to_string()),
         Span::styled(" Materials.", Style::default().fg(Color::LightBlue)),
-        Span::styled("|", Style::default().fg(Color::LightRed)),
+        Span::styled("| ", Style::default().fg(Color::LightRed)),
         Span::raw(app.samples.to_string()),
-        Span::styled(" Samples.", Style::default().fg(Color::Cyan)),
+        Span::styled(" Samples. ", Style::default().fg(Color::Cyan)),
         Span::raw(app.bounces.to_string()),
-        Span::styled(" Bounces.", Style::default().fg(Color::Magenta)),
+        Span::styled(" Bounces. ", Style::default().fg(Color::Magenta)),
         Span::styled("|", Style::default().fg(Color::LightRed)),
         Span::styled(
-            format!(" {}.ppm", app.image_name_input),
+            format!(" {}.ppm ", app.image_name_input),
             Style::default().fg(Color::LightYellow),
         ),
         Span::raw(format!(
@@ -241,7 +280,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
         }),
     );
     frame.render_widget(stats, main[1]);
-    frame.render_widget(object_list, main[0]);
+    frame.render_stateful_widget(table, main[0], &mut table_state);
 
     match app.current_screen {
         CurrentScreen::Confirmation => {

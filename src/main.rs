@@ -80,6 +80,28 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         app.current_screen = CurrentScreen::Render;
                         app.current_edit = Some(CurrentlyEditing::Width);
                     }
+                    KeyCode::Up => {
+                        app.selected_object = if let Some(selected) = app.selected_object {
+                            if selected > 0 {
+                                Some(selected - 1)
+                            } else {
+                                Some(app.world.objects.len().saturating_sub(1))
+                            }
+                        } else {
+                            Some(app.world.objects.len().saturating_sub(1))
+                        }
+                    }
+                    KeyCode::Down => {
+                        app.selected_object = if let Some(selected) = app.selected_object {
+                            if selected < app.world.objects.len().saturating_sub(1) {
+                                Some(selected + 1)
+                            } else {
+                                Some(0)
+                            }
+                        } else {
+                            Some(0)
+                        }
+                    }
                     _ => {}
                 },
                 CurrentScreen::Confirmation => match key.code {
@@ -99,7 +121,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         app.current_screen = CurrentScreen::Main;
                         app.current_edit = None;
                     }
-                    KeyCode::Tab => app.change_editing(),
+                    KeyCode::Tab => app.change_editing(true),
+                    KeyCode::BackTab => app.change_editing(false),
+                    KeyCode::Left => app.change_editing(false),
+                    KeyCode::Right => app.change_editing(true),
                     KeyCode::Enter => {
                         if let Some(editing) = &app.current_edit {
                             match app.save_object() {
@@ -177,7 +202,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     _ => {}
                 },
                 CurrentScreen::MaterialEditor => match key.code {
-                    KeyCode::Tab => app.change_editing(),
+                    KeyCode::Tab => app.change_editing(true),
+                    KeyCode::BackTab => app.change_editing(false),
+                    KeyCode::Left => app.change_editing(false),
+                    KeyCode::Right => app.change_editing(true),
                     KeyCode::Esc => app.current_screen = CurrentScreen::Main,
                     KeyCode::Char(value) => {
                         if let Some(editing) = &app.current_edit {
@@ -238,7 +266,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     _ => {}
                 },
                 CurrentScreen::ColorEditor => match key.code {
-                    KeyCode::Tab => app.change_editing(),
+                    KeyCode::Tab => app.change_editing(true),
+                    KeyCode::BackTab => app.change_editing(false),
+                    KeyCode::Left => app.change_editing(false),
+                    KeyCode::Right => app.change_editing(true),
                     _ => {}
                 },
                 CurrentScreen::Render => match key.code {
@@ -248,7 +279,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     KeyCode::Enter => {
                         render_image(app, terminal);
                     }
-                    KeyCode::Tab => app.change_editing(),
+                    KeyCode::Tab => app.change_editing(true),
+                    KeyCode::BackTab => app.change_editing(false),
+                    KeyCode::Left => app.change_editing(false),
+                    KeyCode::Right => app.change_editing(true),
                     KeyCode::Char(value) => {
                         if let Some(editing) = &app.current_edit {
                             match editing {
