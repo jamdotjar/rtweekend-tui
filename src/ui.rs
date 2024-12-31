@@ -119,14 +119,6 @@ pub fn ui(frame: &mut Frame, app: &App) {
             info_lines.push(Line::styled("  Enter: Save", Style::default()));
             info_lines.push(Line::styled("  Esc: Cancel", Style::default()));
         }
-        CurrentScreen::MaterialPicker => {
-            info_lines.push(Line::styled(
-                "Material Picker:",
-                Style::default().fg(Color::Green),
-            ));
-            info_lines.push(Line::styled("  ↑ & ↓: Navigate", Style::default()));
-            info_lines.push(Line::styled("  Enter: Save selection", Style::default()));
-        }
         CurrentScreen::MaterialEditor => {
             info_lines.push(Line::styled(
                 "Material Editor:",
@@ -175,8 +167,8 @@ pub fn ui(frame: &mut Frame, app: &App) {
         .enumerate()
         .map(|(i, data)| {
             let color = match i % 2 {
-                0 => Color::Rgb((30), (30), (40)),
-                _ => Color::Rgb((25), (25), (35)),
+                0 => Color::Rgb(30, 30, 40),
+                _ => Color::Rgb(25, 25, 35),
             };
             let item = data
                 .iter()
@@ -201,7 +193,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
     let table = Table::new(rows, widths)
         .header(
             Row::new(vec!["Type", "Radius", "X", "Y", "Z", "Material"])
-                .style(Style::default().bg(Color::Rgb((30), (40), (75))))
+                .style(Style::default().bg(Color::Rgb(30, 40, 75)))
                 .height(2),
         )
         .block(object_block);

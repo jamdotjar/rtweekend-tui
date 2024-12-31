@@ -1,5 +1,8 @@
+#![warn(clippy::pedantic)]
+
 use std::fs::File;
 
+use color_eyre::Result;
 use crossterm::terminal;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -198,7 +201,7 @@ pub fn render_view(frame: &mut Frame, area: Rect, app: &App) {
     frame.render_widget(txt_aperture, camera_settings_chunks[2]);
 }
 
-pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) {
+pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
     // render image
     let file = File::create(format!("{}.ppm", app.image_name_input)).unwrap();
     let mut cam = Camera::new(file);
@@ -228,10 +231,11 @@ pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) {
 
     cam.render(app.world.clone(), |progress| {
         app.render_progress = progress as f64 / app.image_height.parse::<f64>().unwrap();
-        terminal.draw(|f| {
+        let _ = terminal.draw(|f| {
             progress_ui(f, app);
         });
-    });
+    })?;
+    Ok(())
 }
 
 fn progress_ui(frame: &mut Frame, app: &App) {

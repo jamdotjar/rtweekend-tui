@@ -1,4 +1,6 @@
 #![allow(unused_imports)]
+#![warn(clippy::pedantic)]
+
 use std::{
     collections::{binary_heap, HashMap},
     rc::Rc,
@@ -17,8 +19,6 @@ pub enum CurrentScreen {
     Main,
     Editor,
     MaterialEditor,
-    ColorEditor,
-    MaterialPicker,
     Confirmation,
     Render,
 }
@@ -199,23 +199,6 @@ impl App {
         Ok(())
     }
 
-    pub fn display(&self) -> Result<(), ()> {
-        let world = &self.world.as_simple_vec();
-        for object in world {
-            println!("{}", object)
-        }
-        Ok(())
-    }
-    pub fn cycle_mat_type(&mut self) {
-        if let Some(material_type) = &self.mat_type_input {
-            self.mat_type_input = match material_type {
-                MaterialType::Lambertian => Some(MaterialType::Metal),
-                MaterialType::Metal => Some(MaterialType::Dielectric),
-                MaterialType::Dielectric => Some(MaterialType::Normal),
-                MaterialType::Normal => Some(MaterialType::Lambertian),
-            }
-        }
-    }
     pub fn get_color(&self) -> Color {
         if str::len(&self.mat_color_input) != 6 {
             return Color::new(1., 0., 1.);
@@ -291,8 +274,6 @@ impl App {
                 (CurrentlyEditing::Fov, false) => Some(CurrentlyEditing::LookZ),
                 (CurrentlyEditing::FocusDist, false) => Some(CurrentlyEditing::Fov),
                 (CurrentlyEditing::Aperture, false) => Some(CurrentlyEditing::FocusDist),
-
-                _ => None,
             }
         } else {
             self.current_edit = match self.current_screen {

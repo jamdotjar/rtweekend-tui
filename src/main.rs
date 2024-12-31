@@ -1,8 +1,11 @@
 #![allow(unused_imports)]
+#![warn(clippy::pedantic)]
 mod app;
 mod render;
 mod ui;
 use app::*;
+use color_eyre::eyre::WrapErr;
+use color_eyre::Result;
 use crossterm::event::{self, DisableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use ratatui::crossterm::event::EnableMouseCapture;
@@ -23,39 +26,29 @@ use ratatui::{
 use render::*;
 use rtwlib::camera::*;
 use std::error::Error;
-use std::io;
+use std::io::{self, stdout};
 use std::result::Result::Ok;
 use ui::*;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
     // setup terminal
     enable_raw_mode()?;
-    let mut stderr = io::stderr(); // This is a special case. Normally using stdout is fine
-    execute!(stderr, EnterAlternateScreen)?;
-    let backend = CrosstermBackend::new(stderr);
-    let mut terminal = Terminal::new(backend)?;
+    ratatui::init();
+    execute!(stdout(), EnterAlternateScreen)?;
+
+    let mut terminal = ratatui::init();
 
     // create app and run it
     let mut app = App::new();
-    let res = run_app(&mut terminal, &mut app);
-
+    run_app(&mut terminal, &mut app)?;
     // restore terminal
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-    terminal.show_cursor()?;
-
-    if let Ok(do_print) = res {
-        if do_print {
-            println!("today");
-        }
-    } else if let Err(err) = res {
-        println!("{err:?}");
-    }
+    ratatui::restore();
 
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<bool> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool> {
     loop {
         terminal.draw(|f| ui(f, app))?;
         if let Event::Key(key) = event::read()? {
@@ -125,14 +118,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     KeyCode::BackTab => app.change_editing(false),
                     KeyCode::Left => app.change_editing(false),
                     KeyCode::Right => app.change_editing(true),
-                    KeyCode::Enter => {
-                        if let Some(editing) = &app.current_edit {
-                            match app.save_object() {
-                                Ok(_) => app.current_screen = CurrentScreen::Main,
-                                Err(_) => {}
-                            }
-                        }
-                    }
+                    KeyCode::Enter => match app.save_object() {
+                        Ok(_) => app.current_screen = CurrentScreen::Main,
+                        Err(_) => {}
+                    },
                     KeyCode::Up => {
                         if let Some(CurrentlyEditing::Material) = &app.current_edit {
                             if app.material_input < app.materials.len() - 1 {
@@ -194,13 +183,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
 
                     _ => {}
                 },
-                CurrentScreen::MaterialPicker => match key.code {
-                    KeyCode::Enter => {
-                        //save the material choice
-                        app.current_screen = CurrentScreen::Editor
-                    }
-                    _ => {}
-                },
                 CurrentScreen::MaterialEditor => match key.code {
                     KeyCode::Tab => app.change_editing(true),
                     KeyCode::BackTab => app.change_editing(false),
@@ -256,6 +238,23 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                             }
                         }
                     }
+                    KeyCode::Down => {
+                        if let Some(editing) = &app.current_edit {
+                            match editing {
+                                CurrentlyEditing::MatType => {
+                                    if let Some(mat_type) = &app.mat_type_input {
+                                        app.mat_type_input = match mat_type {
+                                            MaterialType::Lambertian => Some(MaterialType::Normal),
+                                            MaterialType::Metal => Some(MaterialType::Lambertian),
+                                            MaterialType::Dielectric => Some(MaterialType::Metal),
+                                            MaterialType::Normal => Some(MaterialType::Dielectric),
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
                     KeyCode::Enter => match app.save_material() {
                         Ok(_) => {
                             app.current_screen = CurrentScreen::Main;
@@ -265,19 +264,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     },
                     _ => {}
                 },
-                CurrentScreen::ColorEditor => match key.code {
-                    KeyCode::Tab => app.change_editing(true),
-                    KeyCode::BackTab => app.change_editing(false),
-                    KeyCode::Left => app.change_editing(false),
-                    KeyCode::Right => app.change_editing(true),
-                    _ => {}
-                },
                 CurrentScreen::Render => match key.code {
                     KeyCode::Esc => {
                         app.current_screen = CurrentScreen::Main;
                     }
                     KeyCode::Enter => {
-                        render_image(app, terminal);
+                        render_image(app, terminal)?;
                     }
                     KeyCode::Tab => app.change_editing(true),
                     KeyCode::BackTab => app.change_editing(false),
