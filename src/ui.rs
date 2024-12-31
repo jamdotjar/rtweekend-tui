@@ -1,26 +1,31 @@
 #![allow(unused_imports)]
 use std::default;
 
-use crate::{App, CurrentScreen, CurrentlyEditing, MaterialType};
+use crate::{
+    render::{self, render_view},
+    App, CurrentScreen, CurrentlyEditing, MaterialType,
+};
 use color_eyre::owo_colors::OwoColorize;
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Modifier, Style, Styled, Stylize},
     symbols::line::TOP_RIGHT,
     text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
+    widgets::{
+        Block, BorderType, Borders, Clear, List, ListItem, ListState, Padding, Paragraph, Wrap,
+    },
     Frame,
 };
 use rtwlib::material::Material;
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
-fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+pub fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
     // Cut the given rectangle into three vertical pieces
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
+            Constraint::Min(4),
             Constraint::Percentage((100 - percent_y) / 2),
         ])
         .split(r);
@@ -30,7 +35,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
+            Constraint::Min(10),
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup_layout[1])[1] // Return the middle chunk
@@ -69,18 +74,31 @@ pub fn ui(frame: &mut Frame, app: &App) {
         .style(Style::default());
 
     let mut info_lines = vec![
-        Line::styled("rtweekend.rs", Style::default().fg(Color::Red)),
-        Line::styled("Here's a little raytracer", Style::default()),
+        Line::styled("╦═╗╔╦╗╦ ╦ ┬─┐┌─┐", Style::default().fg(Color::Red)),
+        Line::styled("╠╦╝ ║ ║║║ ├┬┘└─┐", Style::default().fg(Color::Red)),
+        Line::styled("╩╚═ ╩ ╚╩╝°┴└─└─┘", Style::default().fg(Color::Red)),
+        Line::styled("Raytracing in rust", Style::default().fg(Color::Green)),
         Line::styled(
             "CONTROLS",
-            Style::default().fg(Color::Yellow).bg(Color::DarkGray),
+            Style::default()
+                .fg(Color::LightBlue)
+                .add_modifier(Modifier::BOLD),
         ),
     ];
 
     match app.current_screen {
         CurrentScreen::Main => {
-            info_lines.push(Line::styled("Main Page:", Style::default().fg(Color::Blue)));
-            info_lines.push(Line::styled("  [N]: Create new object", Style::default()));
+            info_lines.push(Line::styled(
+                "Main Page:",
+                Style::default()
+                    .fg(Color::Blue)
+                    .add_modifier(Modifier::BOLD),
+            ));
+            info_lines.push(Line::styled("  [N]: Create a new object", Style::default()));
+            info_lines.push(Line::styled(
+                "  [M]: Create a new material",
+                Style::default(),
+            ));
             info_lines.push(Line::styled("  [R]: Render the scene", Style::default()));
             info_lines.push(Line::styled("  [Q]: Quit", Style::default()));
         }
@@ -91,20 +109,17 @@ pub fn ui(frame: &mut Frame, app: &App) {
                 Style::default(),
             ));
             info_lines.push(Line::styled("  Type to input", Style::default()));
+            info_lines.push(Line::styled("  ↑ & ↓: Choose Material", Style::default()));
             info_lines.push(Line::styled("  Enter: Confirm", Style::default()));
             info_lines.push(Line::styled("  Esc: Cancel", Style::default()));
         }
         CurrentScreen::MaterialPicker => {
             info_lines.push(Line::styled(
-                "Material Pickers:",
+                "Material Picker:",
                 Style::default().fg(Color::Green),
             ));
-            info_lines.push(Line::styled("  Arrow Keys: Navigate", Style::default()));
-            info_lines.push(Line::styled("  Enter: Save", Style::default()));
-            info_lines.push(Line::styled(
-                "  [N]: Create a new material",
-                Style::default(),
-            ));
+            info_lines.push(Line::styled("  ↑ & ↓: Navigate", Style::default()));
+            info_lines.push(Line::styled("  Enter: Save selection", Style::default()));
         }
         CurrentScreen::MaterialEditor => {
             info_lines.push(Line::styled(
@@ -115,9 +130,23 @@ pub fn ui(frame: &mut Frame, app: &App) {
                 "  TAB: Cycle through inputs",
                 Style::default(),
             ));
-            info_lines.push(Line::styled("  Type to input", Style::default()));
+            info_lines.push(Line::styled("  Type to input color", Style::default()));
+            info_lines.push(Line::styled(
+                "  ↑ & ↓: cycle through material types",
+                Style::default(),
+            ));
             info_lines.push(Line::styled("  Enter: Save", Style::default()));
             info_lines.push(Line::styled("  Esc: Cancel", Style::default()));
+        }
+        CurrentScreen::Render => {
+            info_lines.push(Line::styled(
+                "Render settings",
+                Style::default().fg(Color::Red),
+            ));
+            info_lines.push("  Tab: Cycle through inputs".into());
+            info_lines.push("  Type to input".into());
+            info_lines.push("  Enter: Render scene ( this might take a bit )".into());
+            info_lines.push("  Esc: Close".into());
         }
         _ => {}
     }
@@ -130,7 +159,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
     for object in app.world.as_simple_vec() {
         objects.push(ListItem::new(Line::from(Span::styled(
             object,
-            Style::default().fg(Color::Yellow),
+            Style::default().fg(Color::LightYellow),
         ))));
     }
     let object_block = Block::default()
@@ -138,20 +167,56 @@ pub fn ui(frame: &mut Frame, app: &App) {
         .border_type(BorderType::Rounded);
     let object_list = List::new(objects).block(object_block);
 
+    //material list
+    let mut materials = Vec::<ListItem>::new();
+
+    for material in app.materials.iter() {
+        materials.push(ListItem::new(Line::from(Span::styled(
+            material.0.as_str(),
+            Style::default().fg(Color::LightYellow),
+        ))));
+    }
+    let material_block = Block::default()
+        .borders(Borders::TOP)
+        .border_type(BorderType::Plain)
+        .title("Scene Materials")
+        .title_alignment(Alignment::Center)
+        .padding(Padding::left(2));
+
+    let material_list = List::new(materials).block(material_block);
+
     //stats/info bar
 
     let stats_block = Block::default()
         .borders(Borders::union(Borders::RIGHT, Borders::BOTTOM))
         .border_type(BorderType::Thick)
-        .title("Stats")
         .style(Style::default());
 
-    let stats_lines = vec![Line::styled(
-        format!("Objects in Scene: {}", app.world.objects.len()),
-        Style::default().fg(Color::Green),
-    )];
+    let stats_lines = vec![Line::from(vec![
+        Span::raw(app.world.objects.len().to_string()),
+        Span::styled(" Objects in Scene. ", Style::default().fg(Color::Green)),
+        Span::raw(app.materials.len().to_string()),
+        Span::styled(" Materials.", Style::default().fg(Color::LightBlue)),
+        Span::styled("|", Style::default().fg(Color::LightRed)),
+        Span::raw(app.samples.to_string()),
+        Span::styled(" Samples.", Style::default().fg(Color::Cyan)),
+        Span::raw(app.bounces.to_string()),
+        Span::styled(" Bounces.", Style::default().fg(Color::Magenta)),
+        Span::styled("|", Style::default().fg(Color::LightRed)),
+        Span::styled(
+            format!(" {}.ppm", app.image_name_input),
+            Style::default().fg(Color::LightYellow),
+        ),
+        Span::raw(format!(
+            "{}x{}",
+            app.image_width.to_string(),
+            app.image_height.to_string()
+        )),
+    ])];
 
-    let stats = Paragraph::new(Text::from(stats_lines)).block(stats_block);
+    let stats = Paragraph::new(Text::from(stats_lines))
+        .block(stats_block)
+        .alignment(Alignment::Center);
     //exiting app popup
     let confirmation_block = Block::default()
         .title("Quit")
@@ -168,6 +233,13 @@ pub fn ui(frame: &mut Frame, app: &App) {
         .wrap(Wrap { trim: false });
 
     frame.render_widget(info, outer[0]);
+    frame.render_widget(
+        material_list,
+        sidebar[1].inner(Margin {
+            vertical: 1,
+            horizontal: 1,
+        }),
+    );
     frame.render_widget(stats, main[1]);
     frame.render_widget(object_list, main[0]);
 
@@ -177,8 +249,8 @@ pub fn ui(frame: &mut Frame, app: &App) {
             frame.render_widget(confirmation_paragraph, centered_rect(40, 20, frame.area()))
         }
         CurrentScreen::Editor => editor(frame, app),
-        CurrentScreen::MaterialPicker => material_picker(frame, app),
         CurrentScreen::MaterialEditor => material_editor(frame, app),
+        CurrentScreen::Render => render_view(frame, main[0], app),
         _ => {}
     }
 }
@@ -194,13 +266,13 @@ fn editor(frame: &mut Frame, app: &App) {
     let editor_area = centered_rect(45, 20, frame.area());
     let editor_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .margin(2)
+        .margin(((editor_area.height - 2) / 2).clamp(1, 5))
         .spacing(2)
         .constraints([
             Constraint::Min(6),
-            Constraint::Min(6),
-            Constraint::Min(6),
-            Constraint::Min(6),
+            Constraint::Min(4),
+            Constraint::Min(4),
+            Constraint::Min(4),
             Constraint::Min(16),
         ])
         .split(editor_area);
@@ -222,7 +294,7 @@ fn editor(frame: &mut Frame, app: &App) {
         .borders(Borders::NONE)
         .bg(Color::DarkGray);
     let mut bl_mat = Block::default()
-        .title("Material Index")
+        .title("Material")
         .borders(Borders::NONE)
         .bg(Color::DarkGray);
 
@@ -243,11 +315,7 @@ fn editor(frame: &mut Frame, app: &App) {
     let txt_posx = Paragraph::new(app.position_input_x.clone()).block(bl_posx);
     let txt_posy = Paragraph::new(app.position_input_y.clone()).block(bl_posy);
     let txt_posz = Paragraph::new(app.position_input_z.clone()).block(bl_posz);
-    let txt_mat = Paragraph::new(format!(
-        "{} (hit any key to edit)",
-        app.material_input.to_string()
-    ))
-    .block(bl_mat);
+    let txt_mat = Paragraph::new(app.materials[app.material_input].0.clone()).block(bl_mat);
 
     frame.render_widget(Clear, editor_area);
     frame.render_widget(editor_block, editor_area);
@@ -257,31 +325,6 @@ fn editor(frame: &mut Frame, app: &App) {
     frame.render_widget(txt_posy, editor_chunks[2]);
     frame.render_widget(txt_posz, editor_chunks[3]);
     frame.render_widget(txt_mat, editor_chunks[4]);
-}
-
-fn material_picker(frame: &mut Frame, app: &App) {
-    let picker_block = Block::default()
-        .title("Choose a material")
-        .title_alignment(Alignment::Center)
-        .borders(Borders::ALL)
-        .style(Style::default())
-        .border_type(BorderType::Rounded);
-    let picker_area = centered_rect(30, 30, frame.area());
-
-    let material_names: Vec<ListItem> = app
-        .materials
-        .iter()
-        .map(|(name, _)| ListItem::new(name.as_str()))
-        .collect();
-
-    let material_list = List::new(material_names)
-        .block(picker_block)
-        .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
-
-    let mut state = ListState::default();
-    state.select(Some(app.material_input));
-
-    frame.render_stateful_widget(material_list, picker_area, &mut state);
 }
 
 fn material_editor(frame: &mut Frame, app: &App) {
@@ -296,9 +339,10 @@ fn material_editor(frame: &mut Frame, app: &App) {
         .margin(2)
         .spacing(2)
         .constraints([
-            Constraint::Min(7), //Type
-            Constraint::Min(7), //Color
-            Constraint::Min(5), //Other
+            Constraint::Min(7),  //Type
+            Constraint::Min(7),  //Color
+            Constraint::Min(5),  //other
+            Constraint::Min(15), //name
         ])
         .split(editor_area);
     let mut bl_type = Block::default()
@@ -312,6 +356,11 @@ fn material_editor(frame: &mut Frame, app: &App) {
             (app.get_color().x * 255.0) as u8,
             (app.get_color().y * 255.0) as u8,
             (app.get_color().z * 255.0) as u8,
+        ))
+        .fg(Color::Rgb(
+            255 - (app.get_color().x * 255.0) as u8,
+            255 - (app.get_color().y * 255.0) as u8,
+            255 - (app.get_color().z * 255.0) as u8,
         ));
     let mut bl_other = Block::default()
         .title(match app.mat_type_input {
@@ -321,6 +370,11 @@ fn material_editor(frame: &mut Frame, app: &App) {
         })
         .borders(Borders::NONE)
         .bg(Color::DarkGray);
+    let mut bl_name = Block::default()
+        .title("Name")
+        .borders(Borders::NONE)
+        .bg(Color::DarkGray);
+
     let selected_style = Style::default().bg(Color::White).fg(Color::Black);
 
     if let Some(editing) = &app.current_edit {
@@ -328,14 +382,15 @@ fn material_editor(frame: &mut Frame, app: &App) {
             CurrentlyEditing::MatType => bl_type = bl_type.style(selected_style),
             CurrentlyEditing::MatColor => bl_color = bl_color.style(selected_style),
             CurrentlyEditing::MatProperty => bl_other = bl_other.style(selected_style),
+            CurrentlyEditing::MatName => bl_name = bl_name.style(selected_style),
             _ => {}
         }
     }
 
-    let txt_type = Paragraph::new(app.mat_type_input.clone().unwrap().to_string());
+    let txt_type = Paragraph::new(app.mat_type_input.clone().unwrap().to_string()).block(bl_type);
     let txt_color = Paragraph::new(app.mat_color_input.clone()).block(bl_color);
     let txt_other = Paragraph::new(app.mat_other_input.clone()).block(bl_other);
-
+    let txt_name = Paragraph::new(app.mat_name_input.clone()).block(bl_name);
     frame.render_widget(Clear, editor_area);
     frame.render_widget(editor_block, editor_area);
 
@@ -350,4 +405,5 @@ fn material_editor(frame: &mut Frame, app: &App) {
         }
         _ => {}
     }
+    frame.render_widget(txt_name, editor_chunks[3]);
 }

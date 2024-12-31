@@ -32,9 +32,22 @@ pub enum CurrentlyEditing {
     MatType,
     MatColor,
     MatProperty,
-    ColorR,
-    ColorG,
-    ColorB,
+    MatName,
+    // Render
+    Height,
+    Width,
+    ImgName,
+    Samples,
+    Bounces,
+    CamX,
+    CamY,
+    CamZ,
+    LookX,
+    LookY,
+    LookZ,
+    Fov,
+    FocusDist,
+    Aperture,
 }
 #[derive(Clone)]
 pub enum MaterialType {
@@ -69,6 +82,21 @@ pub struct App {
     pub mat_color_input: String,
     pub mat_other_input: String,
     pub mat_name_input: String,
+    pub image_name_input: String,
+    pub image_height: String,
+    pub image_width: String,
+    pub samples: String,
+    pub bounces: String,
+    pub camx: String,
+    pub camy: String,
+    pub camz: String,
+    pub lookx: String,
+    pub looky: String,
+    pub lookz: String,
+    pub fov: String,
+    pub focus_dist: String,
+    pub aperture: String,
+    pub render_progress: f64,
 }
 
 impl App {
@@ -92,6 +120,21 @@ impl App {
             mat_color_input: String::from("fa4e4e"),
             mat_other_input: String::from("0.0"),
             mat_name_input: String::from("Material"),
+            image_height: String::from("600"),
+            image_width: String::from("338"),
+            image_name_input: String::from("image"),
+            samples: String::from("50"),
+            bounces: String::from("15"),
+            camx: String::from("-1.0"),
+            camy: String::from("0.0"),
+            camz: String::from("0.0"),
+            lookx: String::from("0.0"),
+            looky: String::from("0.0"),
+            lookz: String::from("0.0"),
+            fov: String::from("45.0"),
+            focus_dist: String::from("1.0"),
+            aperture: String::from("0.0"),
+            render_progress: 0.0,
         }
     }
     pub fn save_material(&mut self) -> Result<(), String> {
@@ -164,12 +207,29 @@ impl App {
                 CurrentlyEditing::Material => Some(CurrentlyEditing::Size),
 
                 CurrentlyEditing::MatType => Some(CurrentlyEditing::MatColor),
-                CurrentlyEditing::MatColor => Some(CurrentlyEditing::MatProperty),
-                CurrentlyEditing::MatProperty => Some(CurrentlyEditing::MatType),
+                CurrentlyEditing::MatColor => match self.mat_type_input {
+                    Some(MaterialType::Dielectric) | Some(MaterialType::Metal) => {
+                        Some(CurrentlyEditing::MatProperty)
+                    }
+                    _ => Some(CurrentlyEditing::MatName),
+                },
+                CurrentlyEditing::MatProperty => Some(CurrentlyEditing::MatName),
+                CurrentlyEditing::MatName => Some(CurrentlyEditing::MatType),
 
-                CurrentlyEditing::ColorR => Some(CurrentlyEditing::ColorG),
-                CurrentlyEditing::ColorG => Some(CurrentlyEditing::ColorB),
-                CurrentlyEditing::ColorB => Some(CurrentlyEditing::ColorR),
+                CurrentlyEditing::Width => Some(CurrentlyEditing::Height),
+                CurrentlyEditing::Height => Some(CurrentlyEditing::ImgName),
+                CurrentlyEditing::ImgName => Some(CurrentlyEditing::Samples),
+                CurrentlyEditing::Samples => Some(CurrentlyEditing::Bounces),
+                CurrentlyEditing::Bounces => Some(CurrentlyEditing::CamX),
+                CurrentlyEditing::CamX => Some(CurrentlyEditing::CamY),
+                CurrentlyEditing::CamY => Some(CurrentlyEditing::CamZ),
+                CurrentlyEditing::CamZ => Some(CurrentlyEditing::LookX),
+                CurrentlyEditing::LookX => Some(CurrentlyEditing::LookY),
+                CurrentlyEditing::LookY => Some(CurrentlyEditing::LookZ),
+                CurrentlyEditing::LookZ => Some(CurrentlyEditing::Fov),
+                CurrentlyEditing::Fov => Some(CurrentlyEditing::FocusDist),
+                CurrentlyEditing::FocusDist => Some(CurrentlyEditing::Aperture),
+                CurrentlyEditing::Aperture => Some(CurrentlyEditing::Width),
             }
         } else {
             self.current_edit = match self.current_screen {
@@ -197,9 +257,12 @@ impl App {
         }
     }
     pub fn get_color(&self) -> Color {
-        let r = u8::from_str_radix(&self.mat_color_input[0..2], 16).unwrap_or(255);
-        let g = u8::from_str_radix(&self.mat_color_input[2..4], 16).unwrap_or(0);
-        let b = u8::from_str_radix(&self.mat_color_input[4..6], 16).unwrap_or(255);
+        if str::len(&self.mat_color_input) != 6 {
+            return Color::new(1., 0., 1.);
+        }
+        let r = u8::from_str_radix(&self.mat_color_input[0..2], 16).unwrap_or_else(|_| 255);
+        let g = u8::from_str_radix(&self.mat_color_input[2..4], 16).unwrap_or_else(|_| 0);
+        let b = u8::from_str_radix(&self.mat_color_input[4..6], 16).unwrap_or_else(|_| 255);
 
         Color::new(r as f64 / 255.0, g as f64 / 255.0, b as f64 / 255.0)
     }
