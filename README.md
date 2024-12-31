@@ -74,6 +74,11 @@ This will open the main page, were you can create objects, materials, and render
 - `Enter` - Render scene (this might take a bit)
 - `Esc` - Close
 
+## Examples
+Here's a snowman I made with this:
+![snowman](https://github.com/user-attachments/assets/90d3572f-5801-4713-9f73-87bfe9f4441d)
+and a sphere!
+![diffuse](https://github.com/user-attachments/assets/2d27cc85-140d-4c0a-9a8c-8ceae7918816)
 
 ## License
 This project is licensed under the GPL-3.0 License.
