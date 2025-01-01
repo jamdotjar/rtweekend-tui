@@ -203,31 +203,30 @@ pub fn render_view(frame: &mut Frame, area: Rect, app: &App) {
 
 pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
     // render image
-    let file = File::create(format!("{}.ppm", app.image_name_input)).unwrap();
+    let file = File::create(format!("{}.ppm", app.image_name_input))?;
     let mut cam = Camera::new(file);
-    cam.aspect_ratio =
-        app.image_width.parse::<f64>().unwrap() / app.image_height.parse::<f64>().unwrap();
-    cam.image_width = app.image_width.parse::<u32>().unwrap();
-    cam.samples = app.samples.parse::<u32>().unwrap();
-    cam.bounces = app.bounces.parse::<u32>().unwrap();
+    cam.aspect_ratio = app.image_width.parse::<f64>()? / app.image_height.parse::<f64>()?;
+    cam.image_width = app.image_width.parse::<u32>()?;
+    cam.samples = app.samples.parse::<u32>()?;
+    cam.bounces = app.bounces.parse::<u32>()?;
 
     cam.lookfrom = Point3::new(
-        app.camx.parse::<f64>().unwrap(),
-        app.camy.parse::<f64>().unwrap(),
-        app.camz.parse::<f64>().unwrap(),
+        app.camx.parse::<f64>()?,
+        app.camy.parse::<f64>()?,
+        app.camz.parse::<f64>()?,
     );
 
     cam.lookat = Point3::new(
-        app.lookx.parse::<f64>().unwrap(),
-        app.looky.parse::<f64>().unwrap(),
-        app.lookz.parse::<f64>().unwrap(),
+        app.lookx.parse::<f64>()?,
+        app.looky.parse::<f64>()?,
+        app.lookz.parse::<f64>()?,
     );
 
     cam.vup = Point3::new(0.0, 1.0, 0.0);
 
-    cam.vfov = app.fov.parse::<f64>().unwrap();
-    cam.focus_dist = app.focus_dist.parse::<f64>().unwrap();
-    cam.defocus_angle = app.aperture.parse::<f64>().unwrap();
+    cam.vfov = app.fov.parse::<f64>()?;
+    cam.focus_dist = app.focus_dist.parse::<f64>()?;
+    cam.defocus_angle = app.aperture.parse::<f64>()?;
 
     cam.render(app.world.clone(), |progress| {
         app.render_progress = progress as f64 / app.image_height.parse::<f64>().unwrap();

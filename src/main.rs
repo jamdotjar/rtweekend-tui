@@ -268,9 +268,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     KeyCode::Esc => {
                         app.current_screen = CurrentScreen::Main;
                     }
-                    KeyCode::Enter => {
-                        render_image(app, terminal)?;
-                    }
+                    KeyCode::Enter => match render_image(app, terminal) {
+                        Ok(_) => {
+                            app.current_screen = CurrentScreen::Main;
+                        }
+                        Err(_) => app.current_screen = CurrentScreen::Render,
+                    },
                     KeyCode::Tab => app.change_editing(true),
                     KeyCode::BackTab => app.change_editing(false),
                     KeyCode::Left => app.change_editing(false),
