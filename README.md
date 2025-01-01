@@ -43,6 +43,7 @@ to open the TUI run the following command
 rtwtui
 ```
 This will open the main page, were you can create objects, materials, and render your scene. For each page, I will list the keybindings and what they do.
+> ***IMPORTANT***: If you try to submit anything (render, material, object) with invalid inputs, nothing will hapen. You will have to fix the inputs before you can submit ( or cancel with `Esc` )
 
 **Main Page**
 - `↑`/`↓` - Scroll object list
