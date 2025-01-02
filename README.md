@@ -44,7 +44,7 @@ rtwtui
 ```
 This will open the main page, were you can create objects, materials, and render your scene. For each page, I will list the keybindings and what they do.
 > ***IMPORTANT***: If you try to submit anything (render, material, object) with invalid inputs, nothing will hapen. You will have to fix the inputs before you can submit ( or cancel with `Esc` )
-
+> ***ALSO IMPORTANT***: If your renders take an abnormally long time and result in a black screen, your camera is probably inside an object. This can ususally be fixed by just moving the camera back a bit more
 **Main Page**
 - `↑`/`↓` - Scroll object list
 - `n` - Create a new object
@@ -76,10 +76,33 @@ This will open the main page, were you can create objects, materials, and render
 - `Esc` - Close
 
 ## Examples
+Here's a a sphere!
+![diffuse](https://github.com/user-attachments/assets/2d27cc85-140d-4c0a-9a8c-8ceae7918816)
+here are the settings for this scene.
+```
+Sphere 1: radius 0.5, (1, 0, 0)
+Sphere 2: radius 100.0, (1, -100.5, 0)
+
+Camera: (-1, 0, 0), lookat(1, 0, 0), fov: 45
+```
 Here's a snowman I made with this:
 ![snowman](https://github.com/user-attachments/assets/90d3572f-5801-4713-9f73-87bfe9f4441d)
-and a sphere!
-![diffuse](https://github.com/user-attachments/assets/2d27cc85-140d-4c0a-9a8c-8ceae7918816)
+*I challenge you to try to make a snowman*
+## Misc Info & Tips
+- Y will always be "UP" in renders
+- Lookat is the only way to set camera rotation, just coose a location and the camera will automatically rotate to face it.
+- The more objects you add, the slower renders will be, so dont add 20 spheres and expect it to be fast.
+- You don't need a lot of bounces for a good quality on most scenes (5-10 works fine on basic diffuse-only, for metal/glass feel free to bring it up a bit)
+- Samples affect render time significantly more than bounces, but you should still have a fairly high sample count to avoid noise. For a clean render, anything above 100-150 is usually good.
+- Images will be created whereever you run the tool, so if you want all your images in one folder run the tool from there. 
+> this app creates portable pixelmap files (.ppm). These are not widely used, and not ideal for sharing due to their lack of compression. I'd suggest converting them to png or jpg if you want to store them longterm, as otherwise they can be space hogs.
+> Here is a list of programs that could be used to view/convert PPM files:
+> - GIMP (Mac/Windows/Linux) *might be a bit overkill*
+> - Preview (Mac - builtin)
+> - ImageMagick (Mac/Windows/Linux) *conversion only*
+> - IrfanView (Windows)
+> - [this website](https://www.cs.rhodes.edu/welshc/COMP141_F16/ppmReader.html)
+> This list isnt exhaustive, so check if your normal image viewer can be used first.
 
 ## License
 This project is licensed under the GPL-3.0 License.
