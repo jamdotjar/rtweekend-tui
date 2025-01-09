@@ -1,4 +1,9 @@
 # rtw.tui
+[![Crates.io](https://img.shields.io/crates/v/rtw-tui?style=flat-square)](https://crates.io/crates/rtw-tui)
+[![Crates.io](https://img.shields.io/crates/d/rtw-tui?style=flat-square)](https://crates.io/crates/rtw-tui)
+[![License](https://img.shields.io/badge/license-GPL-blue?style=flat-square)](./LICENSE)
+[![Crates.io Size](https://img.shields.io/crates/size/rtw-tui)](https://crates.io/crates/rtw-tui)
+
 
 This is a terminal user interface (TUI) for my raytracer, based off the book "Ray Tracing in One Weekend" by Peter Shirley.
 It allows you to create and render simple scenes in your terminal.

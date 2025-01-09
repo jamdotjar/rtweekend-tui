@@ -555,8 +555,6 @@ dependencies = [
 [[package]]
 name = "rtwlib"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e12bdb7ffaef090b8283c84bfb1b85d8cf67cadc16817b96443782be72d87f34"
 dependencies = [
  "rand",
 ]

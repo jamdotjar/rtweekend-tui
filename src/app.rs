@@ -21,6 +21,7 @@ pub enum CurrentScreen {
     MaterialEditor,
     Confirmation,
     Render,
+    Preview,
 }
 
 pub enum CurrentlyEditing {
