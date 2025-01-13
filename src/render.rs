@@ -1,6 +1,6 @@
 #![warn(clippy::pedantic)]
 
-use std::fs::File;
+use std::{ fs::File};
 
 use color_eyre::Result;
 use crossterm::terminal;

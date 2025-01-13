@@ -2,8 +2,7 @@
 use std::default;
 
 use crate::{
-    render::{self, render_view},
-    App, CurrentScreen, CurrentlyEditing, MaterialType,
+    render::{self, render_view}, render_preview, App, CurrentScreen, CurrentlyEditing, MaterialType
 };
 use color_eyre::owo_colors::OwoColorize;
 use ratatui::{
@@ -104,6 +103,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
                 "  [M]: Create a new material",
                 Style::default(),
             ));
+            info_lines.push(Line::styled("  [P]: View a preview render (ESC to close)", Style::default()));
             info_lines.push(Line::styled("  [R]: Render the scene", Style::default()));
             info_lines.push(Line::styled("  [Q]: Quit", Style::default()));
         }
@@ -282,6 +282,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
         CurrentScreen::Editor => editor(frame, app),
         CurrentScreen::MaterialEditor => material_editor(frame, app),
         CurrentScreen::Render => render_view(frame, main[0], app),
+        CurrentScreen::Preview => render_preview(frame, frame.area(), app).unwrap_or(()),
         _ => {}
     }
 }

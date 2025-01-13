@@ -2,8 +2,10 @@
 #![warn(clippy::pedantic)]
 mod app;
 mod render;
+mod preview;
 mod ui;
 use app::*;
+use preview::*;
 use color_eyre::eyre::WrapErr;
 use color_eyre::Result;
 use crossterm::event::{self, DisableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -49,8 +51,8 @@ fn main() -> color_eyre::Result<()> {
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool> {
+    terminal.draw(|f| ui(f, app))?; //inital ui draw
     loop {
-        terminal.draw(|f| ui(f, app))?;
         if let Event::Key(key) = event::read()? {
             if key.kind == event::KeyEventKind::Release {
                 continue; //skips loggint the release of keys
@@ -60,6 +62,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     KeyCode::Char('n') => {
                         app.current_screen = CurrentScreen::Editor;
                         app.current_edit = Some(CurrentlyEditing::Size)
+                    }
+                    KeyCode::Char('p') => {
+                        app.current_screen = CurrentScreen::Preview;
+                        
                     }
                     KeyCode::Char('m') => {
                         app.current_screen = CurrentScreen::MaterialEditor;
@@ -378,7 +384,20 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     }
                     _ => {}
                 },
+                CurrentScreen::Preview => match key.code {
+                    KeyCode::Esc => {
+                        app.current_screen = CurrentScreen::Main;
+                        terminal.draw(|f| ui(f, app))?; //only draws if exiting to avoid lag.
+                    }
+                    _ => {
+                        continue;
+                    }
+                },
             }
+            terminal.draw(|f| ui(f, app))?; //redraw ui for key events
+        }
+        else if let Event::Resize(_, _) = event::read()? {
+            terminal.draw(|f| ui(f, app))?;
         }
     }
 }
