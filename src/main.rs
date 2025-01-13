@@ -394,7 +394,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     }
                 },
             }
-            terminal.draw(|f| ui(f, app))?; //redraw ui
+            terminal.draw(|f| ui(f, app))?; //redraw ui for key events
+        }
+        else if let Event::Resize(_, _) = event::read()? {
+            terminal.draw(|f| ui(f, app))?;
         }
     }
 }

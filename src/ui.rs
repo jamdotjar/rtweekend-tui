@@ -103,6 +103,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
                 "  [M]: Create a new material",
                 Style::default(),
             ));
+            info_lines.push(Line::styled("  [P]: View a preview render (ESC to close)", Style::default()));
             info_lines.push(Line::styled("  [R]: Render the scene", Style::default()));
             info_lines.push(Line::styled("  [Q]: Quit", Style::default()));
         }

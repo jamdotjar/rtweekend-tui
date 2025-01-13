@@ -86,8 +86,12 @@ impl Widget for Preview {
             }
             lines.push(xlines);
         }
-        for y in (0..=self.cam.get_height() as usize - 1).step_by(2) {
-            for x in 0..=self.cam.image_width  as usize - 1 {
+        for y in (0..lines.len() as usize - 1).step_by(2) {
+            for x in 0..lines[y].len()  as usize {
+                // if (y+1 >= lines.len()) | ( x >= lines[y].len() ){ //put this back if resizing starts crashing stuff
+                //     break;
+                // }
+
                 buf.set_string(area.left() + x as u16, area.top() + (y/2) as u16, "▀", Style::default()
                 .fg(Color::Rgb(
                     lines[y][x][0],
