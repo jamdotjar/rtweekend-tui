@@ -109,6 +109,12 @@ Here's a snowman I made with this:
 > This list isnt exhaustive, so check if your normal image viewer can be used first.
 
 ## Gallery
+<img width="1470" alt="image" src="https://github.com/user-attachments/assets/d3e43ef9-998a-4a9f-aa35-caec97626f3a" />
+<img width="1470" alt="image" src="https://github.com/user-attachments/assets/f3314d05-0579-48b4-afa1-294b05446b80" />
+<img width="1468" alt="image" src="https://github.com/user-attachments/assets/4995b680-8460-49b1-a3a2-0a84ef86572b" />
+<img width="1470" alt="image" src="https://github.com/user-attachments/assets/9102b2ae-b899-4bc4-8895-13407e242450" />
+<img width="1470" alt="image" src="https://github.com/user-attachments/assets/31ead29d-a94e-4aaa-92a6-34983d6c6887" />
+
 
 ## License
 This project is licensed under the GPL-3.0 License.
