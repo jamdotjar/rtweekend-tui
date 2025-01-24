@@ -5,8 +5,7 @@
 [![Crates.io Size](https://img.shields.io/crates/size/rtw-tui)](https://crates.io/crates/rtw-tui)
 
 
-This is a terminal user interface (TUI) for my raytracer, based off the book "Ray Tracing in One Weekend" by Peter Shirley.
-It allows you to create and render simple scenes in your terminal.
+This is a terminal user interface (TUI) for my raytracer, that allows you to create, preview, and render simple scenes, all in your terminal! This is based on my library, [rtwlib](https://crates.io/crates/rtwlib), and is a pseudo-demo for that.
 ## Features
 - Create spheres of any size and position!
 - Make your own materials, diffuse, metal, 
@@ -115,6 +114,12 @@ Here's a snowman I made with this:
 <img width="1470" alt="image" src="https://github.com/user-attachments/assets/9102b2ae-b899-4bc4-8895-13407e242450" />
 <img width="1470" alt="image" src="https://github.com/user-attachments/assets/31ead29d-a94e-4aaa-92a6-34983d6c6887" />
 
+## Future Plans
+- [ ] Add more object types
+- [ ] More intuitive camera controls
+- [ ] Better export options
+- [ ] Scene saving/loading
+*anything that is in the library will probably be added here, so check the library for more info on what might be added*
 
 ## License
 This project is licensed under the GPL-3.0 License.

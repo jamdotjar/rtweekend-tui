@@ -26,7 +26,7 @@ pub fn render_preview(frame: &mut Frame, area: Rect, app: &App, block: bool) -> 
         .border_type(BorderType::Rounded);
 
     let mut cam = Camera::new();
-    cam.image_width = area.width.into();
+    cam.image_width = (area.width - 2).into();
     cam.image_height = (area.height * 2).into();
     cam.samples = 10;
     cam.bounces = 5;
