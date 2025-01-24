@@ -1,15 +1,15 @@
 #![allow(unused_imports)]
 #![warn(clippy::pedantic)]
 mod app;
-mod render;
 mod preview;
+mod render;
 mod ui;
 use app::*;
-use preview::*;
 use color_eyre::eyre::WrapErr;
 use color_eyre::Result;
 use crossterm::event::{self, DisableMouseCapture, Event, KeyCode, KeyEvent, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
+use preview::*;
 use ratatui::crossterm::event::EnableMouseCapture;
 use ratatui::crossterm::execute;
 use ratatui::crossterm::terminal::{enable_raw_mode, EnterAlternateScreen};
@@ -65,7 +65,6 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     }
                     KeyCode::Char('p') => {
                         app.current_screen = CurrentScreen::Preview;
-                        
                     }
                     KeyCode::Char('m') => {
                         app.current_screen = CurrentScreen::MaterialEditor;
@@ -78,6 +77,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     KeyCode::Char('r') => {
                         app.current_screen = CurrentScreen::Render;
                         app.current_edit = Some(CurrentlyEditing::Width);
+                    }
+                    KeyCode::Char('d') => {
+                        if let Some(selected) = app.selected_object {
+                            app.world.objects.remove(selected);
+                        }
                     }
                     KeyCode::Up => {
                         app.selected_object = if let Some(selected) = app.selected_object {
@@ -387,7 +391,20 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                 CurrentScreen::Preview => match key.code {
                     KeyCode::Esc => {
                         app.current_screen = CurrentScreen::Main;
-                        terminal.draw(|f| ui(f, app))?; //only draws if exiting to avoid lag.
+                        terminal.draw(|f| ui(f, app))?; //only draws if exiting or updating to avoid lag.
+                    }
+                    KeyCode::Char('f') => {
+                        app.current_screen = CurrentScreen::PreviewFull;
+                        terminal.draw(|f| ui(f, app))?;
+                    }
+                    _ => {
+                        continue;
+                    }
+                },
+                CurrentScreen::PreviewFull => match key.code {
+                    KeyCode::Esc => {
+                        app.current_screen = CurrentScreen::Preview;
+                        terminal.draw(|f| ui(f, app))?;
                     }
                     _ => {
                         continue;
@@ -395,8 +412,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                 },
             }
             terminal.draw(|f| ui(f, app))?; //redraw ui for key events
-        }
-        else if let Event::Resize(_, _) = event::read()? {
+        } else if let Event::Resize(_, _) = event::read()? {
             terminal.draw(|f| ui(f, app))?;
         }
     }

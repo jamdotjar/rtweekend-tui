@@ -1,6 +1,6 @@
 #![warn(clippy::pedantic)]
 
-use std::{ fs::File};
+use std::{fs::File, io::Write};
 
 use color_eyre::Result;
 use crossterm::terminal;
@@ -203,8 +203,8 @@ pub fn render_view(frame: &mut Frame, area: Rect, app: &App) {
 
 pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
     // render image
-    let file = File::create(format!("{}.ppm", app.image_name_input))?;
-    let mut cam = Camera::new(file);
+    let mut file = File::create(format!("{}.ppm", app.image_name_input))?;
+    let mut cam = Camera::new();
     cam.aspect_ratio = app.image_width.parse::<f64>()? / app.image_height.parse::<f64>()?;
     cam.image_width = app.image_width.parse::<u32>()?;
     cam.samples = app.samples.parse::<u32>()?;
@@ -228,12 +228,14 @@ pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Re
     cam.focus_dist = app.focus_dist.parse::<f64>()?;
     cam.defocus_angle = app.aperture.parse::<f64>()?;
 
-    cam.render(app.world.clone(), |progress| {
+    let render = cam.render_to_bytes(app.world.clone(), |progress| {
         app.render_progress = progress as f64 / app.image_height.parse::<f64>().unwrap();
         let _ = terminal.draw(|f| {
             progress_ui(f, app);
         });
-    })?;
+    });
+    file.write(format!("P6\n{} {}\n255\n", cam.image_width, cam.get_height()).as_bytes())?;
+    file.write_all(&render)?;
     Ok(())
 }
 

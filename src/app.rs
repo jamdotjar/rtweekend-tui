@@ -9,9 +9,8 @@ use std::{
 use color_eyre::owo_colors::OwoColorize;
 use rtwlib::{
     color::Color,
-    hittable::HittableList,
+    hittable::{sphere::Sphere, HittableList},
     material::{Dielectric, Lambertian, Material, Metal, Normal},
-    sphere::Sphere,
     vec3::{Point3, Vec3},
 };
 
@@ -22,6 +21,7 @@ pub enum CurrentScreen {
     Confirmation,
     Render,
     Preview,
+    PreviewFull,
 }
 
 pub enum CurrentlyEditing {
@@ -192,7 +192,7 @@ impl App {
         self.world.add(sphere);
 
         self.material_input = 0;
-        self.size_input = String::from("1.0");
+        self.size_input = String::from("0.5");
         self.position_input_x = String::from("0.0");
         self.position_input_y = String::from("0.0");
         self.position_input_z = String::from("0.0");

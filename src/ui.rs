@@ -2,7 +2,8 @@
 use std::default;
 
 use crate::{
-    render::{self, render_view}, render_preview, App, CurrentScreen, CurrentlyEditing, MaterialType
+    render::{self, render_view},
+    render_preview, App, CurrentScreen, CurrentlyEditing, MaterialType,
 };
 use color_eyre::owo_colors::OwoColorize;
 use ratatui::{
@@ -98,12 +99,20 @@ pub fn ui(frame: &mut Frame, app: &App) {
                 "  ↑ & ↓: Scroll object list",
                 Style::default(),
             ));
+            info_lines.push(Line::styled(
+                "  [D]: Delete selected object",
+                Style::default(),
+            ));
             info_lines.push(Line::styled("  [N]: Create a new object", Style::default()));
             info_lines.push(Line::styled(
                 "  [M]: Create a new material",
                 Style::default(),
             ));
-            info_lines.push(Line::styled("  [P]: View a preview render (ESC to close)", Style::default()));
+            info_lines.push(Line::styled(
+                "  [P]: View a preview render (ESC to close)",
+                Style::default(),
+            ));
+
             info_lines.push(Line::styled("  [R]: Render the scene", Style::default()));
             info_lines.push(Line::styled("  [Q]: Quit", Style::default()));
         }
@@ -148,6 +157,11 @@ pub fn ui(frame: &mut Frame, app: &App) {
             info_lines.push("  Enter: Render scene ( this might take a bit )".into());
             info_lines.push("  Esc: Close".into());
         }
+        CurrentScreen::Preview => {
+            info_lines.push(Line::styled("Preview", Style::default().fg(Color::Red)));
+            info_lines.push("  [F]: Full Screen".into());
+            info_lines.push("  Esc: Close".into());
+        }
         _ => {}
     }
 
@@ -166,10 +180,15 @@ pub fn ui(frame: &mut Frame, app: &App) {
         .iter()
         .enumerate()
         .map(|(i, data)| {
-            let color = match i % 2 {
-                0 => Color::Rgb(30, 30, 40),
-                _ => Color::Rgb(25, 25, 35),
-            };
+            let color: Color;
+            if Some(i) == app.selected_object {
+                color = Color::Rgb(45, 45, 55);
+            } else {
+                color = match i % 2 {
+                    0 => Color::Rgb(30, 30, 40),
+                    _ => Color::Rgb(25, 25, 35),
+                };
+            }
             let item = data
                 .iter()
                 .map(|content| Cell::from(Text::from(format!("\n{content}\n"))))
@@ -282,7 +301,8 @@ pub fn ui(frame: &mut Frame, app: &App) {
         CurrentScreen::Editor => editor(frame, app),
         CurrentScreen::MaterialEditor => material_editor(frame, app),
         CurrentScreen::Render => render_view(frame, main[0], app),
-        CurrentScreen::Preview => render_preview(frame, frame.area(), app).unwrap_or(()),
+        CurrentScreen::Preview => render_preview(frame, main[0], app, true).unwrap_or(()),
+        CurrentScreen::PreviewFull => render_preview(frame, frame.area(), app, false).unwrap_or(()),
         _ => {}
     }
 }

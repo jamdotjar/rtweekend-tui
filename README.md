@@ -16,8 +16,6 @@ glass? we got it all!
 - Loads of camera settings.
 - Did I mention the spheres?
 
-
-
 ## Installation
 To use rtw.tui, you need to have Rust installed on your system. You can install Rust by following the instructions on the [official website](https://www.rust-lang.org/tools/install).
 
@@ -107,7 +105,10 @@ Here's a snowman I made with this:
 > - ImageMagick (Mac/Windows/Linux) *conversion only*
 > - IrfanView (Windows)
 > - [this website](https://www.cs.rhodes.edu/welshc/COMP141_F16/ppmReader.html)
+>
 > This list isnt exhaustive, so check if your normal image viewer can be used first.
+
+## Gallery
 
 ## License
 This project is licensed under the GPL-3.0 License.
