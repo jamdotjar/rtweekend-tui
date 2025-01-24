@@ -81,6 +81,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     KeyCode::Char('d') => {
                         if let Some(selected) = app.selected_object {
                             app.world.objects.remove(selected);
+                            if selected > app.world.objects.len() {
+                                app.selected_object = Some(app.world.objects.len());
+                            }
+                            if selected == 0 {
+                                app.selected_object = None;
+                            }
                         }
                     }
                     KeyCode::Up => {
