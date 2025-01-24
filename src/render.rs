@@ -13,7 +13,8 @@ use ratatui::{
     Frame, Terminal,
 };
 use rtwlib::{
-    camera::{self, Camera},
+    camera::{self, Camera, GradientSky},
+    color::Color,
     vec3::Point3,
 };
 
@@ -227,6 +228,11 @@ pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Re
     cam.vfov = app.fov.parse::<f64>()?;
     cam.focus_dist = app.focus_dist.parse::<f64>()?;
     cam.defocus_angle = app.aperture.parse::<f64>()?;
+
+    cam.sky = Box::new(GradientSky {
+        start: Color::new(0.5, 0.7, 1.0),
+        end: Color::new(1.0, 1.0, 1.0),
+    });
 
     let render = cam.render_to_bytes(app.world.clone(), |progress| {
         app.render_progress = progress as f64 / app.image_height.parse::<f64>().unwrap();
