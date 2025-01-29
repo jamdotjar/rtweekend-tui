@@ -146,6 +146,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                                 app.material_input = 0;
                             }
                         }
+                        if let Some(CurrentlyEditing::Type) = &app.current_edit {
+                            if app.type_input < 1 {
+                                app.type_input += 1;
+                            } else {
+                                app.type_input = 0;
+                            }
+                        }
                     }
 
                     KeyCode::Down => {
@@ -154,6 +161,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                                 app.material_input -= 1;
                             } else {
                                 app.material_input = app.materials.len() - 1
+                            }
+                        }
+                        if let Some(CurrentlyEditing::Type) = &app.current_edit {
+                            if app.type_input > 0 {
+                                app.type_input -= 1;
+                            } else {
+                                app.type_input = 1;
                             }
                         }
                     }

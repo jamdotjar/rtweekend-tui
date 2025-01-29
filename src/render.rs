@@ -235,7 +235,8 @@ pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Re
     });
 
     let render = cam.render_to_bytes(app.world.clone(), |progress| {
-        app.render_progress = progress as f64 / app.image_height.parse::<f64>().unwrap();
+        app.render_progress =
+            (progress as f64 / app.image_height.parse::<f64>().unwrap()).clamp(0.0, 1.0);
         let _ = terminal.draw(|f| {
             progress_ui(f, app);
         });

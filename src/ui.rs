@@ -211,7 +211,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
     table_state.select(app.selected_object);
     let table = Table::new(rows, widths)
         .header(
-            Row::new(vec!["Type", "Radius", "X", "Y", "Z", "Material"])
+            Row::new(vec!["Type", "Size", "X", "Y", "Z", "Material"])
                 .style(Style::default().bg(Color::Rgb(30, 40, 75)))
                 .height(2),
         )
@@ -315,12 +315,13 @@ fn editor(frame: &mut Frame, app: &App) {
         .borders(Borders::ALL)
         .style(Style::default().bg(Color::Black))
         .border_type(BorderType::Rounded);
-    let editor_area = centered_rect(45, 20, frame.area());
+    let editor_area = centered_rect(50, 20, frame.area());
     let editor_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(((editor_area.height - 2) / 2).clamp(1, 5))
         .spacing(2)
         .constraints([
+            Constraint::Min(6),
             Constraint::Min(6),
             Constraint::Min(4),
             Constraint::Min(4),
@@ -329,20 +330,40 @@ fn editor(frame: &mut Frame, app: &App) {
         ])
         .split(editor_area);
 
+    let mut bl_type = Block::default()
+        .title("Type")
+        .borders(Borders::NONE)
+        .bg(Color::DarkGray);
     let mut bl_radius = Block::default()
-        .title("Radius")
+        .title(match app.type_input {
+            0 => "Radius",
+            1 => "Y",
+            _ => "ERROR",
+        })
         .borders(Borders::NONE)
         .bg(Color::DarkGray);
     let mut bl_posx = Block::default()
-        .title("X")
+        .title(match app.type_input {
+            0 => "X",
+            1 => "Facing X",
+            _ => "ERROR",
+        })
         .borders(Borders::NONE)
         .bg(Color::DarkGray);
     let mut bl_posy = Block::default()
-        .title("Y")
+        .title(match app.type_input {
+            0 => "Y",
+            1 => "Facing Y",
+            _ => "ERROR",
+        })
         .borders(Borders::NONE)
         .bg(Color::DarkGray);
     let mut bl_posz = Block::default()
-        .title("Z")
+        .title(match app.type_input {
+            0 => "Z",
+            1 => "Facing Z",
+            _ => "ERROR",
+        })
         .borders(Borders::NONE)
         .bg(Color::DarkGray);
     let mut bl_mat = Block::default()
@@ -354,6 +375,7 @@ fn editor(frame: &mut Frame, app: &App) {
 
     if let Some(editing) = &app.current_edit {
         match editing {
+            CurrentlyEditing::Type => bl_type = bl_type.style(selected_style),
             CurrentlyEditing::Size => bl_radius = bl_radius.style(selected_style),
             CurrentlyEditing::PositionX => bl_posx = bl_posx.style(selected_style),
             CurrentlyEditing::PositionY => bl_posy = bl_posy.style(selected_style),
@@ -362,7 +384,7 @@ fn editor(frame: &mut Frame, app: &App) {
             _ => {}
         }
     }
-
+    let txt_type = Paragraph::new(app.get_type()).block(bl_type);
     let txt_size = Paragraph::new(app.size_input.clone()).block(bl_radius);
     let txt_posx = Paragraph::new(app.position_input_x.clone()).block(bl_posx);
     let txt_posy = Paragraph::new(app.position_input_y.clone()).block(bl_posy);
@@ -372,11 +394,12 @@ fn editor(frame: &mut Frame, app: &App) {
     frame.render_widget(Clear, editor_area);
     frame.render_widget(editor_block, editor_area);
 
-    frame.render_widget(txt_size, editor_chunks[0]);
-    frame.render_widget(txt_posx, editor_chunks[1]);
-    frame.render_widget(txt_posy, editor_chunks[2]);
-    frame.render_widget(txt_posz, editor_chunks[3]);
-    frame.render_widget(txt_mat, editor_chunks[4]);
+    frame.render_widget(txt_type, editor_chunks[0]);
+    frame.render_widget(txt_size, editor_chunks[1]);
+    frame.render_widget(txt_posx, editor_chunks[2]);
+    frame.render_widget(txt_posy, editor_chunks[3]);
+    frame.render_widget(txt_posz, editor_chunks[4]);
+    frame.render_widget(txt_mat, editor_chunks[5]);
 }
 
 fn material_editor(frame: &mut Frame, app: &App) {

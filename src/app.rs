@@ -9,7 +9,7 @@ use std::{
 use color_eyre::owo_colors::OwoColorize;
 use rtwlib::{
     color::Color,
-    hittable::{sphere::Sphere, HittableList},
+    hittable::{plane::Plane, sphere::Sphere, Hittable, HittableList},
     material::{Dielectric, Lambertian, Material, Metal, Normal},
     vec3::{Point3, Vec3},
 };
@@ -25,6 +25,7 @@ pub enum CurrentScreen {
 }
 
 pub enum CurrentlyEditing {
+    Type,
     Size,
     PositionX,
     PositionY,
@@ -75,6 +76,7 @@ pub struct App {
     pub world: HittableList,
     pub materials: Vec<(String, Rc<dyn Material>)>,
     pub material_input: usize,
+    pub type_input: usize,
     pub size_input: String,
     pub position_input_x: String,
     pub position_input_y: String,
@@ -102,6 +104,13 @@ pub struct App {
 }
 
 impl App {
+    pub fn get_type(&self) -> String {
+        match self.type_input {
+            0 => String::from("Sphere"),
+            1 => String::from("Plane"),
+            _ => String::from("Unknown"),
+        }
+    }
     pub fn new() -> App {
         App {
             current_screen: CurrentScreen::Main,
@@ -114,6 +123,7 @@ impl App {
                 Rc::new(Lambertian::new(Color::from(0.8))),
             )],
             material_input: 0,
+            type_input: 0,
             size_input: String::from("0.5"),
             position_input_x: String::from("0.0"),
             position_input_y: String::from("0.0"),
@@ -188,8 +198,12 @@ impl App {
 
         let position = Point3::new(pos_x, pos_y, pos_z);
 
-        let sphere = Sphere::new(position, size, mat.clone());
-        self.world.add(sphere);
+        let object: Box<dyn Hittable> = match self.type_input {
+            0 => Box::new(Sphere::new(position, size, mat.clone())),
+            1 => Box::new(Plane::new(Point3::new(0., size, 0.), position, mat.clone())),
+            _ => return Err(String::from("Invalid object type")),
+        };
+        self.world.objects.push(object);
 
         self.material_input = 0;
         self.size_input = String::from("0.5");
@@ -214,11 +228,12 @@ impl App {
     pub fn change_editing(&mut self, forwards: bool) {
         if let Some(edit_mode) = &self.current_edit {
             self.current_edit = match (edit_mode, forwards) {
+                (CurrentlyEditing::Type, true) => Some(CurrentlyEditing::Size),
                 (CurrentlyEditing::Size, true) => Some(CurrentlyEditing::PositionX),
                 (CurrentlyEditing::PositionX, true) => Some(CurrentlyEditing::PositionY),
                 (CurrentlyEditing::PositionY, true) => Some(CurrentlyEditing::PositionZ),
                 (CurrentlyEditing::PositionZ, true) => Some(CurrentlyEditing::Material),
-                (CurrentlyEditing::Material, true) => Some(CurrentlyEditing::Size),
+                (CurrentlyEditing::Material, true) => Some(CurrentlyEditing::Type),
 
                 (CurrentlyEditing::MatType, true) => Some(CurrentlyEditing::MatColor),
                 (CurrentlyEditing::MatColor, true) => match self.mat_type_input {
@@ -245,7 +260,8 @@ impl App {
                 (CurrentlyEditing::FocusDist, true) => Some(CurrentlyEditing::Aperture),
                 (CurrentlyEditing::Aperture, true) => Some(CurrentlyEditing::Width),
 
-                (CurrentlyEditing::Size, false) => Some(CurrentlyEditing::Material),
+                (CurrentlyEditing::Type, false) => Some(CurrentlyEditing::Material),
+                (CurrentlyEditing::Size, false) => Some(CurrentlyEditing::Type),
                 (CurrentlyEditing::PositionX, false) => Some(CurrentlyEditing::Size),
                 (CurrentlyEditing::PositionY, false) => Some(CurrentlyEditing::PositionX),
                 (CurrentlyEditing::PositionZ, false) => Some(CurrentlyEditing::PositionY),
