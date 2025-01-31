@@ -90,6 +90,7 @@ Camera: (-1, 0, 0), lookat(1, 0, 0), fov: 45
 Here's a snowman I made with this:
 ![snowman](https://github.com/user-attachments/assets/90d3572f-5801-4713-9f73-87bfe9f4441d)
 *I challenge you to try to make a snowman*
+![blakcwhitegrain](https://github.com/user-attachments/assets/ec2cd0bb-422d-435f-b1d1-e77fd0ca5116)
 ## Misc Info & Tips
 - Y will always be "UP" in renders
 - Lookat is the only way to set camera rotation, just coose a location and the camera will automatically rotate to face it.
@@ -113,7 +114,6 @@ Here's a snowman I made with this:
 <img width="1468" alt="image" src="https://github.com/user-attachments/assets/4995b680-8460-49b1-a3a2-0a84ef86572b" />
 <img width="1470" alt="image" src="https://github.com/user-attachments/assets/9102b2ae-b899-4bc4-8895-13407e242450" />
 <img width="1470" alt="image" src="https://github.com/user-attachments/assets/31ead29d-a94e-4aaa-92a6-34983d6c6887" />
-![blakcwhitegrain](https://github.com/user-attachments/assets/ec2cd0bb-422d-435f-b1d1-e77fd0ca5116)
 <img width="1470" alt="Screenshot 2025-01-30 at 8 56 08 PM" src="https://github.com/user-attachments/assets/c576f8f6-5eee-4404-a129-8940da832c97" />
 
 
