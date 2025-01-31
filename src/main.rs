@@ -59,6 +59,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
             }
             match app.current_screen {
                 CurrentScreen::Main => match key.code {
+                    KeyCode::Esc => {
+                        app.current_screen = CurrentScreen::Confirmation;
+                    }
                     KeyCode::Char('n') => {
                         app.current_screen = CurrentScreen::Editor;
                         app.current_edit = Some(CurrentlyEditing::Size)
@@ -77,6 +80,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                     KeyCode::Char('r') => {
                         app.current_screen = CurrentScreen::Render;
                         app.current_edit = Some(CurrentlyEditing::Width);
+                    }
+                    KeyCode::Char('b') => {
+                        app.current_screen = CurrentScreen::SkyEditor;
+                        app.current_edit = Some(CurrentlyEditing::SkyType)
                     }
                     KeyCode::Char('d') => {
                         if let Some(selected) = app.selected_object {
@@ -417,18 +424,67 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> Result<bool
                         app.current_screen = CurrentScreen::PreviewFull;
                         terminal.draw(|f| ui(f, app))?;
                     }
-                    _ => {
-                        continue;
-                    }
+                    _ => continue,
                 },
                 CurrentScreen::PreviewFull => match key.code {
                     KeyCode::Esc => {
                         app.current_screen = CurrentScreen::Preview;
                         terminal.draw(|f| ui(f, app))?;
                     }
-                    _ => {
-                        continue;
+                    _ => continue,
+                },
+                CurrentScreen::SkyEditor => match key.code {
+                    KeyCode::Esc => {
+                        app.current_screen = CurrentScreen::Main;
                     }
+                    KeyCode::Tab => app.change_editing(true),
+                    KeyCode::BackTab => app.change_editing(false),
+                    KeyCode::Left => app.change_editing(false),
+                    KeyCode::Right => app.change_editing(true),
+                    KeyCode::Enter => match app.save_sky() {
+                        Ok(_) => app.current_screen = CurrentScreen::Main,
+                        Err(_) => {}
+                    },
+                    KeyCode::Char(value) => {
+                        if let Some(editing) = &app.current_edit {
+                            match editing {
+                                CurrentlyEditing::SkyColor1 => {
+                                    app.sky_color1.push(value);
+                                }
+                                CurrentlyEditing::SkyColor2 => {
+                                    app.sky_color2.push(value);
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        if let Some(editing) = &app.current_edit {
+                            match editing {
+                                CurrentlyEditing::SkyColor1 => {
+                                    app.sky_color1.pop();
+                                }
+                                CurrentlyEditing::SkyColor2 => {
+                                    app.sky_color2.pop();
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    KeyCode::Up => {
+                        if let Some(editing) = &app.current_edit {
+                            match editing {
+                                CurrentlyEditing::SkyType => {
+                                    app.sky_type = match app.sky_type {
+                                        SkyType::Gradient => SkyType::Solid,
+                                        SkyType::Solid => SkyType::Gradient,
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => continue,
                 },
             }
             terminal.draw(|f| ui(f, app))?; //redraw ui for key events

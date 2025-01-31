@@ -31,6 +31,8 @@ pub fn render_preview(frame: &mut Frame, area: Rect, app: &App, block: bool) -> 
     cam.samples = 10;
     cam.bounces = 5;
 
+    cam.sky = app.sky.clone();
+
     cam.lookfrom = Point3::new(
         app.camx.parse::<f64>()?,
         app.camy.parse::<f64>()?,

@@ -6,8 +6,9 @@ use std::{
     rc::Rc,
 };
 
-use color_eyre::owo_colors::OwoColorize;
+use color_eyre::{eyre::Error, owo_colors::OwoColorize};
 use rtwlib::{
+    camera::{GradientSky, Sky},
     color::Color,
     hittable::{plane::Plane, sphere::Sphere, Hittable, HittableList},
     material::{Dielectric, Lambertian, Material, Metal, Normal},
@@ -22,6 +23,7 @@ pub enum CurrentScreen {
     Render,
     Preview,
     PreviewFull,
+    SkyEditor,
 }
 
 pub enum CurrentlyEditing {
@@ -50,6 +52,9 @@ pub enum CurrentlyEditing {
     Fov,
     FocusDist,
     Aperture,
+    SkyColor1,
+    SkyColor2,
+    SkyType,
 }
 #[derive(Clone)]
 pub enum MaterialType {
@@ -58,7 +63,10 @@ pub enum MaterialType {
     Dielectric,
     Normal,
 }
-
+pub enum SkyType {
+    Solid,
+    Gradient,
+}
 impl std::fmt::Display for MaterialType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -101,6 +109,10 @@ pub struct App {
     pub aperture: String,
     pub render_progress: f64,
     pub selected_object: Option<usize>,
+    pub sky_type: SkyType,
+    pub sky_color1: String,
+    pub sky_color2: String,
+    pub sky: Box<dyn Sky>,
 }
 
 impl App {
@@ -148,6 +160,13 @@ impl App {
             aperture: String::from("0.0"),
             render_progress: 0.0,
             selected_object: None,
+            sky_color1: String::from("a0a0a0"),
+            sky_color2: String::from("ffffff"),
+            sky_type: SkyType::Gradient,
+            sky: Box::new(GradientSky {
+                start: Color::from_hex("a0a0a0").unwrap(),
+                end: Color::from_hex("ffffff").unwrap(),
+            }),
         }
     }
     pub fn save_material(&mut self) -> Result<(), String> {
@@ -214,6 +233,16 @@ impl App {
         Ok(())
     }
 
+    pub fn save_sky(&mut self) -> Result<(), Error> {
+        let end = Color::from_hex(&self.sky_color1)?;
+        let start = Color::from_hex(&self.sky_color2)?;
+        self.sky = match self.sky_type {
+            SkyType::Solid => Box::new(start),
+            SkyType::Gradient => Box::new(GradientSky { start, end }),
+        };
+        Ok(())
+    }
+
     pub fn get_color(&self) -> Color {
         if str::len(&self.mat_color_input) != 6 {
             return Color::new(1., 0., 1.);
@@ -244,6 +273,13 @@ impl App {
                 },
                 (CurrentlyEditing::MatProperty, true) => Some(CurrentlyEditing::MatName),
                 (CurrentlyEditing::MatName, true) => Some(CurrentlyEditing::MatType),
+
+                (CurrentlyEditing::SkyColor1, true) => match self.sky_type {
+                    SkyType::Gradient => Some(CurrentlyEditing::SkyColor2),
+                    SkyType::Solid => Some(CurrentlyEditing::SkyType),
+                },
+                (CurrentlyEditing::SkyColor2, true) => Some(CurrentlyEditing::SkyType),
+                (CurrentlyEditing::SkyType, true) => Some(CurrentlyEditing::SkyColor1),
 
                 (CurrentlyEditing::Width, true) => Some(CurrentlyEditing::Height),
                 (CurrentlyEditing::Height, true) => Some(CurrentlyEditing::ImgName),
@@ -277,6 +313,12 @@ impl App {
                     _ => Some(CurrentlyEditing::MatColor),
                 },
 
+                (CurrentlyEditing::SkyColor1, false) => Some(CurrentlyEditing::SkyType),
+                (CurrentlyEditing::SkyColor2, false) => Some(CurrentlyEditing::SkyColor1),
+                (CurrentlyEditing::SkyType, false) => match self.sky_type {
+                    SkyType::Gradient => Some(CurrentlyEditing::SkyColor2),
+                    SkyType::Solid => Some(CurrentlyEditing::SkyColor1),
+                },
                 (CurrentlyEditing::Width, false) => Some(CurrentlyEditing::Aperture),
                 (CurrentlyEditing::Height, false) => Some(CurrentlyEditing::Width),
                 (CurrentlyEditing::ImgName, false) => Some(CurrentlyEditing::Height),

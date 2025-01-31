@@ -229,10 +229,7 @@ pub fn render_image<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Re
     cam.focus_dist = app.focus_dist.parse::<f64>()?;
     cam.defocus_angle = app.aperture.parse::<f64>()?;
 
-    cam.sky = Box::new(GradientSky {
-        start: Color::new(0.5, 0.7, 1.0),
-        end: Color::new(1.0, 1.0, 1.0),
-    });
+    cam.sky = app.sky.clone();
 
     let render = cam.render_to_bytes(app.world.clone(), |progress| {
         app.render_progress =

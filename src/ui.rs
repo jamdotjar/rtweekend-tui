@@ -2,6 +2,7 @@
 use std::default;
 
 use crate::{
+    app::SkyType,
     render::{self, render_view},
     render_preview, App, CurrentScreen, CurrentlyEditing, MaterialType,
 };
@@ -17,6 +18,8 @@ use ratatui::{
     },
     Frame,
 };
+
+use rtwlib::color::Color as RColor;
 use rtwlib::material::Material;
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
@@ -112,6 +115,10 @@ pub fn ui(frame: &mut Frame, app: &App) {
                 "  [P]: View a preview render (ESC to close)",
                 Style::default(),
             ));
+            info_lines.push(Line::styled(
+                "  [B]: Edit the sky/background",
+                Style::default(),
+            ));
 
             info_lines.push(Line::styled("  [R]: Render the scene", Style::default()));
             info_lines.push(Line::styled("  [Q]: Quit", Style::default()));
@@ -161,6 +168,22 @@ pub fn ui(frame: &mut Frame, app: &App) {
             info_lines.push(Line::styled("Preview", Style::default().fg(Color::Red)));
             info_lines.push("  [F]: Full Screen".into());
             info_lines.push("  Esc: Close".into());
+        }
+        CurrentScreen::SkyEditor => {
+            info_lines.push(Line::styled("Sky Editor", Style::default().fg(Color::Red)));
+            info_lines.push(Line::styled(
+                "  Tab & Shift+Tab: Change inputs",
+                Style::default(),
+            ));
+            info_lines.push(Line::styled("  ← & →: Change inputs", Style::default()));
+            info_lines.push(Line::styled("  Type to input color", Style::default()));
+            info_lines.push(Line::styled(
+                "  ↑ & ↓: cycle through material types",
+                Style::default(),
+            ));
+            info_lines.push(Line::styled("  Type to input", Style::default()));
+            info_lines.push(Line::styled("  Enter: Save", Style::default()));
+            info_lines.push(Line::styled("  Esc: Cancel", Style::default()));
         }
         _ => {}
     }
@@ -303,6 +326,7 @@ pub fn ui(frame: &mut Frame, app: &App) {
         CurrentScreen::Render => render_view(frame, main[0], app),
         CurrentScreen::Preview => render_preview(frame, main[0], app, true).unwrap_or(()),
         CurrentScreen::PreviewFull => render_preview(frame, frame.area(), app, false).unwrap_or(()),
+        CurrentScreen::SkyEditor => sky_editor(frame, app),
         _ => {}
     }
 }
@@ -481,4 +505,105 @@ fn material_editor(frame: &mut Frame, app: &App) {
         _ => {}
     }
     frame.render_widget(txt_name, editor_chunks[3]);
+}
+
+fn sky_editor(frame: &mut Frame, app: &App) {
+    let editor_block = Block::default()
+        .title("Editing Sky")
+        .borders(Borders::ALL)
+        .style(Style::default())
+        .border_type(BorderType::Rounded);
+    let editor_area = centered_rect(50, 25, frame.area());
+    let editor_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(2)
+        .spacing(2)
+        .constraints([
+            Constraint::Min(8), //Type
+            Constraint::Min(7), //Color
+            Constraint::Min(7), //other
+        ])
+        .split(editor_area);
+    let mut bl_type = Block::default()
+        .title("Type")
+        .borders(Borders::NONE)
+        .bg(Color::DarkGray);
+
+    let selcol1: [u8; 3];
+    if app.sky_color1.len() == 6 {
+        selcol1 = match RColor::from_hex(&app.sky_color1) {
+            Ok(color) => color.to_rgb_bytes(),
+            Err(_) => RColor::new(1.0, 0.0, 1.0).to_rgb_bytes(),
+        };
+    } else {
+        selcol1 = RColor::new(1.0, 0.0, 1.0).to_rgb_bytes();
+    }
+    let selcol2: [u8; 3];
+    if app.sky_color2.len() == 6 {
+        selcol2 = match RColor::from_hex(&app.sky_color2) {
+            Ok(color) => color.to_rgb_bytes(),
+            Err(_) => RColor::new(1.0, 0.0, 1.0).to_rgb_bytes(),
+        };
+    } else {
+        selcol2 = RColor::new(1.0, 0.0, 1.0).to_rgb_bytes();
+    }
+    let mut bl_color1 = Block::default()
+        .title(match app.sky_type {
+            SkyType::Gradient => "Top Color",
+            SkyType::Solid => "Color",
+        })
+        .borders(Borders::NONE)
+        .bg(Color::Black)
+        .fg(Color::Rgb(selcol1[0], selcol1[1], selcol1[2]));
+    let mut bl_color2 = Block::default()
+        .title("Bottom Color")
+        .borders(Borders::NONE)
+        .bg(Color::Black)
+        .fg(Color::Rgb(selcol2[0], selcol2[1], selcol2[2]));
+
+    let selected_style = Style::default().bg(Color::White).fg(Color::Black);
+    let inverted1 = Style::default()
+        .bg(Color::Rgb(selcol1[0], selcol1[1], selcol1[2]))
+        .fg(Color::Rgb(
+            255 - selcol1[0],
+            255 - selcol1[1],
+            255 - selcol1[2],
+        ));
+    let inverted2 = Style::default()
+        .bg(Color::Rgb(selcol2[0], selcol2[1], selcol2[2]))
+        .fg(Color::Rgb(
+            255 - selcol2[0],
+            255 - selcol2[1],
+            255 - selcol2[2],
+        ));
+
+    if let Some(editing) = &app.current_edit {
+        match editing {
+            CurrentlyEditing::SkyType => bl_type = bl_type.style(selected_style),
+            CurrentlyEditing::SkyColor1 => bl_color1 = bl_color1.style(inverted1),
+            CurrentlyEditing::SkyColor2 => bl_color2 = bl_color2.style(inverted2),
+            _ => {}
+        }
+    }
+
+    let txt_type = Paragraph::new(match app.sky_type {
+        SkyType::Gradient => "Gradient",
+        SkyType::Solid => "Solid",
+    })
+    .block(bl_type);
+
+    let txt_color1 = Paragraph::new(app.sky_color1.clone()).block(bl_color1);
+    let txt_color2 = Paragraph::new(app.sky_color2.clone()).block(bl_color2);
+
+    frame.render_widget(Clear, editor_area);
+    frame.render_widget(editor_block, editor_area);
+
+    frame.render_widget(txt_type, editor_chunks[0]);
+    frame.render_widget(txt_color1, editor_chunks[1]);
+    match app.sky_type {
+        SkyType::Gradient => {
+            frame.render_widget(txt_color2, editor_chunks[2]);
+        }
+        _ => {}
+    }
 }
