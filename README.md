@@ -5,7 +5,7 @@
 [![Crates.io Size](https://img.shields.io/crates/size/rtw-tui)](https://crates.io/crates/rtw-tui)
 
 
-This is a terminal user interface (TUI) for my raytracer, that allows you to create, preview, and render simple scenes, all in your terminal! This is based on my library, [rtwlib](https://crates.io/crates/rtwlib), and is a pseudo-demo for that.
+This is a terminal user interface (TUI) for my raytracer, that allows you to create, preview, and render simple scenes, all in your terminal! This is based on my library, [rtwlib](https://crates.io/crates/rtwlib), and is a pseudo-demo for that. It's made using the fantastic ratatui library, and is probably cross platform.
 ## Features
 - Create spheres of any size and position!
 - Make your own materials, diffuse, metal, 
